@@ -76,20 +76,18 @@ Perceptual hashing extracts a compact, **transformation-resistant signature** fr
 The **2D DCT** of an image **f(x,y)** is computed as:
 
 $$
-DCT(u,v) = lpha(u) lpha(v) \sum_{x=0}^{N-1} \sum_{y=0}^{N-1} f(x,y) 
-\cos\left[rac{\pi}{N} (x + 0.5) u 
-ight] 
-\cos\left[rac{\pi}{N} (y + 0.5) v 
-ight]
+DCT(u,v) = \alpha(u) \alpha(v) \sum_{x=0}^{N-1} \sum_{y=0}^{N-1} f(x,y) 
+\cos\left(\frac{\pi}{N} (x + 0.5) u \right) 
+\cos\left(\frac{\pi}{N} (y + 0.5) v \right)
 $$
 
 where:
 
 $$
-lpha(u) =
-egin{cases}
-rac{1}{\sqrt{N}}, & u = 0 \
-\sqrt{rac{2}{N}}, & u > 0
+\alpha(u) =
+\begin{cases}
+\frac{1}{\sqrt{N}}, & u = 0 \\
+\sqrt{\frac{2}{N}}, & u > 0
 \end{cases}
 $$
 
