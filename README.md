@@ -1,16 +1,14 @@
- CUDA-Accelerated Perceptual Hash (pHash)
-
 ## Overview
 
-Cuda pHash is a high-performance, GPU-accelerated tool for computing the perceptual hash (pHash) of images. 
+CUDA pHash is a high-performance, GPU-accelerated tool for computing the perceptual hash (pHash) of images. 
 
-Cuda pHash outperforms other leading perceptual hash implementations by a wide margin, processing massive datasets via highly-optimized compute pipelines.
+CUDA pHash outperforms other leading perceptual hash implementations by a wide margin, processing massive datasets via highly-optimized compute pipelines.
 
 ## Performance Benchmark 🚀
 
-| Implementation                            | Wall clock Time* ⏱️ | Speedup vs. CUDA ⚡ |
+| Implementation                            | Wall clock Time (ms)* ⏱️ | Speedup vs. CUDA ⚡ |
 |------------------------------------------|-----------------|----------------- |
-| **⚡ Cuda pHash**            | **000.000**     | **Baseline** 🏆 |
+| **⚡ CUDA pHash**            | **000.000**     | **Baseline** 🏆 |
 | **OpenCV pHash**                     | 000.000         | **0.0× slower** 🐢 |
 | **Python pHash**      | 000.000         | **0.0× slower** 🐢 |
 
@@ -40,21 +38,17 @@ int hammingDistance(const std::vector<uint32_t>& hashA, const std::vector<uint32
 }
 
 int main() {
-    // Initialize CUDA-based pHash with:
+    // Initialize CUDA pHash with:
     // - hashSize = 8
     // - highFreqFactor = 4
     // - batchSize = 5000
     CudaPhash phasher(8, 4, 5000);
 
     // Image paths to process
-    std::vector<std::string> imagePaths = {
-        "image1.jpg", 
-        "image2.jpg", 
-        "image3.jpg"
-    };
+    std::vector<std::string> imagePaths = { "image1.jpg", "image2.jpg", "image3.jpg" };
 
     // Compute perceptual hashes
-    std::vector<std::vector<uint32_t>> results = phasher.phash(imagePaths);
+    std::vector<std::vector<uint32_t>> hashes = phasher.phash(imagePaths);
 
     // Compute Hamming distance between image1 and image2
     int dist = hammingDistance(results[0], results[1]);
