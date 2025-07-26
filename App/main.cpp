@@ -1,9 +1,9 @@
 //
-//  main.cpp – CLI front-end for CUDA pHash library
+//  main.cpp ï¿½ CLI front-end for CUDA pHash library
 //
 
 #include "argparse.hpp"
-#include "..\Cuda pHash\src\phash_cuda.cu"
+#include "..\Cuda pHash\include\phash_cuda.cuh"
 
 #include <algorithm>
 #include <cctype>
