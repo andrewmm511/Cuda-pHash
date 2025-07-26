@@ -1,0 +1,21 @@
+﻿  main.cpp
+C:\Cuda-pHash\Cuda pHash\cuda_utils.hpp(12,9): warning C4005: 'CUDA_CHECK': macro redefinition
+  (compiling source file 'main.cpp')
+      C:\Cuda-pHash\Cuda pHash\include\memory_manager.cuh(13,9):
+      see previous definition of 'CUDA_CHECK'
+  
+C:\Cuda-pHash\Cuda pHash\src\phash_cuda.cu(101,24): error C2059: syntax error: '<'
+  (compiling source file 'main.cpp')
+  
+C:\Cuda-pHash\Cuda pHash\src\phash_cuda.cu(311,36): error C2059: syntax error: '<'
+  (compiling source file 'main.cpp')
+  
+C:\Cuda-pHash\Cuda pHash\src\phash_cuda.cu(378,34): error C2059: syntax error: '<'
+  (compiling source file 'main.cpp')
+  
+C:\Cuda-pHash\Cuda pHash\src\phash_cuda.cu(518,37): error C2059: syntax error: '<'
+  (compiling source file 'main.cpp')
+  
+C:\Cuda-pHash\Cuda pHash\src\phash_cuda.cu(524,32): error C2059: syntax error: '<'
+  (compiling source file 'main.cpp')
+  

@@ -1,0 +1,19 @@
+c:\cuda-phash\cuda phash\x64\release\memory_manager.cuh.obj
+c:\cuda-phash\cuda phash\x64\release\kernels.cu.obj
+c:\cuda-phash\cuda phash\x64\release\img_proc.cu.obj
+c:\cuda-phash\cuda phash\x64\release\phash_cuda.cuh.obj
+c:\cuda-phash\cuda phash\x64\release\memory_manager.cu.obj
+c:\cuda-phash\cuda phash\x64\release\phash_cuda.cu.obj
+c:\cuda-phash\x64\release\cuda phash.lib
+c:\cuda-phash\cuda phash\x64\release\img_proc.cu.cache
+c:\cuda-phash\cuda phash\x64\release\kernels.cu.cache
+c:\cuda-phash\cuda phash\x64\release\memory_manager.cu.cache
+c:\cuda-phash\cuda phash\x64\release\memory_manager.cuh.cache
+c:\cuda-phash\cuda phash\x64\release\phash_cuda.cu.cache
+c:\cuda-phash\cuda phash\x64\release\phash_cuda.cuh.cache
+c:\cuda-phash\x64\release\cuda phash.pdb
+c:\cuda-phash\cuda phash\x64\release\cuda phash.tlog\cudacompile.read.1u.tlog
+c:\cuda-phash\cuda phash\x64\release\cuda phash.tlog\cudacompile.write.1u.tlog
+c:\cuda-phash\cuda phash\x64\release\cuda phash.tlog\lib-link.read.1.tlog
+c:\cuda-phash\cuda phash\x64\release\cuda phash.tlog\lib-link.write.1.tlog
+c:\cuda-phash\cuda phash\x64\release\cuda phash.tlog\lib.command.1.tlog

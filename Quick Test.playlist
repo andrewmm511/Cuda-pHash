@@ -1,0 +1,59 @@
+<Playlist Version="2.0">
+  <Rule Name="Includes" Match="Any">
+    <Rule Match="All">
+      <Property Name="Solution" />
+      <Rule Match="Any">
+        <Rule Match="All">
+          <Property Name="Project" Value="Test" />
+          <Rule Match="Any">
+            <Rule Match="All">
+              <Property Name="Namespace" Value="IntegrationTests" />
+              <Rule Match="Any">
+                <Rule Match="All">
+                  <Property Name="Class" Value="Hashing" />
+                  <Rule Match="Any">
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="IntegrationTests::Hashing::MultipleRuns" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="MultipleRuns" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="IntegrationTests::Hashing::RelativeSimilarity" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="RelativeSimilarity" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="IntegrationTests::Hashing::HashSmallDataset" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="HashSmallDataset" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="IntegrationTests::Hashing::HashMediumDataset" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="HashMediumDataset" />
+                      </Rule>
+                    </Rule>
+                  </Rule>
+                </Rule>
+                <Rule Match="All">
+                  <Property Name="Class" Value="Duplicates" />
+                  <Rule Match="Any">
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="IntegrationTests::Duplicates::DuplicateDetection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="DuplicateDetection" />
+                      </Rule>
+                    </Rule>
+                  </Rule>
+                </Rule>
+              </Rule>
+            </Rule>
+          </Rule>
+        </Rule>
+      </Rule>
+    </Rule>
+  </Rule>
+</Playlist>
