@@ -7,19 +7,6 @@
 
 # Build results
 build/
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
-[Aa][Rr][Mm]/
-[Aa][Rr][Mm]64/
-bld/
-[Bb]in/
-[Oo]bj/
-[Ll]og/
-[Ll]ogs/
 
 # Visual C++ cache files
 ipch/
@@ -75,24 +62,13 @@ ipch/
 *.cubin
 *.fatbin
 
-# Build logs
+# Build and test logs
 *.tlog
-
-# Test results
-[Tt]est[Rr]esult*/
-[Bb]uild[Ll]og.*
-*.gta.testdurations
-XMLGoogleTestResults.xml
+*.txt
 
 # CUDA dependencies cache
 *.deps
 *.cache
 
-# Visual Studio Code
-.vscode/
-
 # vcpkg
 vcpkg.applocal.log
-
-# Project-specific DLLs in the root x64 folder (old build location)
-/x64/
