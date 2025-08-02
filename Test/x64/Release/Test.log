@@ -1,9 +1,0 @@
-﻿  Integration.cpp
-  Unit.cpp
-     Creating library C:\Cuda-pHash\x64\Release\Test.lib and object C:\Cuda-pHash\x64\Release\Test.exp
-  Generating code
-  1589 of 1616 functions (98.3%) were compiled, the rest were copied from previous compilation.
-    279 functions were new in current compilation
-    4 functions had inline decision re-evaluated but remain unchanged
-  Finished generating code
-  Test.vcxproj -> C:\Cuda-pHash\x64\Release\Test.dll

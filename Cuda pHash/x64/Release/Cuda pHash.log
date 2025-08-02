@@ -1,8 +1,0 @@
-﻿  Compiling CUDA source file src\phash_cuda.cu...
-  
-  C:\Cuda-pHash\Cuda pHash>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\bin\nvcc.exe" -gencode=arch=compute_86,code=\"sm_86,compute_86\" --use-local-env -ccbin "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64" -x cu   -I"C:\Cuda-pHash\Cuda pHash\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\include" -I"C:\Cuda-pHash\Cuda pHash\third_party" -I"C:\Cuda-pHash\Cuda pHash\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\include"  -G   --keep-dir x64\Release  -maxrregcount=0    --machine 64 --compile -cudart shared -std=c++20 -Xcompiler "/std:c++20"   -DWIN32 -DWIN64 -DNDEBUG -D_CONSOLE -D_MBCS -Xcompiler "/EHsc /W3 /nologo /O2 /FS /Zi  /MD " -Xcompiler "/Fd\"C:\Cuda-pHash\x64\Release\Cuda pHash.pdb\"" -o "C:\Cuda-pHash\Cuda pHash\x64\Release\phash_cuda.cu.obj" "C:\Cuda-pHash\Cuda pHash\src\phash_cuda.cu" 
-C:\Cuda-pHash\Cuda pHash\src\../cuda_utils.hpp(12): warning C4005: 'CUDA_CHECK': macro redefinition
-C:\Cuda-pHash\Cuda pHash\src\../cuda_utils.hpp(12): warning C4005: 'CUDA_CHECK': macro redefinition
-  phash_cuda.cu
-  tmpxft_0000ef0c_00000000-7_phash_cuda.cudafe1.cpp
-  Cuda pHash.vcxproj -> C:\Cuda-pHash\x64\Release\Cuda pHash.lib

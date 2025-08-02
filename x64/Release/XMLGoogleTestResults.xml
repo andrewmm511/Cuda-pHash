@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuites tests="1" failures="0" disabled="0" errors="0" time="0.387" timestamp="2025-05-28T22:02:26.885" name="AllTests">
-  <testsuite name="PHashTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.387" timestamp="2025-05-28T22:02:26.885">
-    <testcase name="BasicHashingFunctionality" file="C:\Users\andre\source\repos\Tests\test.cpp" line="314" status="run" result="completed" time="0.387" timestamp="2025-05-28T22:02:26.885" classname="PHashTest" />
-  </testsuite>
-</testsuites>
