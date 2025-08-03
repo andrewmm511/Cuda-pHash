@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cuda pHash", ".\Cuda pHash\Cuda pHash.vcxproj", "{05BF1EAF-E03B-4C96-BBB5-D1FA16694B2E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CudapHash", ".\CudapHash\CudapHash.vcxproj", "{05BF1EAF-E03B-4C96-BBB5-D1FA16694B2E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "App", ".\App\App.vcxproj", "{45D46641-3D20-4734-9CDD-3AB1FBA068CF}"
 	ProjectSection(ProjectDependencies) = postProject

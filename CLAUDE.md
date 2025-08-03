@@ -10,14 +10,14 @@ CUDA pHash is a high-performance, GPU-accelerated tool for computing perceptual 
 
 This is a Visual Studio solution with CUDA support:
 
-- **Build Solution**: Open `Cuda pHash.sln` in Visual Studio and build (Ctrl+Shift+B)
+- **Build Solution**: Open `CudapHash.sln` in Visual Studio and build (Ctrl+Shift+B)
 - **Build Configuration**: Release x64 is the primary configuration
 - **Output**: Executables are generated in `x64\Release\`
 
 ## Architecture
 
 The solution is structured into three projects:
-1. **Cuda pHash**: Core library implementing the GPU pipeline
+1. **CudapHash**: Core library implementing the GPU pipeline
    - Contains CUDA kernels, memory management, and image processing logic
    - Exposes a C++ API
 2. **App**: Command-line application that uses the core library
@@ -25,16 +25,16 @@ The solution is structured into three projects:
 
 ### Core Components
 
-1. **CudaPhash** (`Cuda pHash\include\phash_cuda.cuh`): Main class that orchestrates the GPU pipeline
+1. **CudaPhash** (`CudapHash\include\phash_cuda.cuh`): Main class that orchestrates the GPU pipeline
    - Manages CUDA resources (streams, memory, handles)
    - Implements multi-stage pipeline: reading → decoding → resizing → hashing
    - Uses cuBLAS for DCT computation
 
-2. **MemoryManager** (`Cuda pHash\include\memory_manager.cuh`): Custom memory management for GPU operations
+2. **MemoryManager** (`CudapHash\include\memory_manager.cuh`): Custom memory management for GPU operations
    - Handles allocation/deallocation of device memory
    - Manages pinned host memory for faster transfers
 
-3. **Image Processing** (`Cuda pHash\include\img_proc.cuh`): GPU kernels for image operations
+3. **Image Processing** (`CudapHash\include\img_proc.cuh`): GPU kernels for image operations
    - JPEG decoding using nvJPEG
    - Image resizing kernels
    - DCT computation using cuBLAS
