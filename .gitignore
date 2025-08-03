@@ -64,7 +64,6 @@ ipch/
 
 # Build and test logs
 *.tlog
-*.txt
 
 # CUDA dependencies cache
 *.deps
