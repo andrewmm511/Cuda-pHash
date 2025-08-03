@@ -116,7 +116,7 @@
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(ProjectDir)third_party</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)third_party;$(ProjectDir)include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -155,7 +155,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(ProjectDir)third_party;$(ProjectDir)include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)third_party;$(ProjectDir)include</AdditionalIncludeDirectories>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -181,24 +181,21 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="cuda_utils.hpp" />
+    <ClInclude Include="include\cuda_utils.hpp" />
     <ClInclude Include="include\img_proc.cuh" />
     <ClInclude Include="include\phash.h" />
     <ClInclude Include="include\phash_base.h" />
-    <ClInclude Include="work_queue.hpp" />
-    <CudaCompile Include="include\memory_manager.cuh" />
-    <ClInclude Include="kernels.cuh" />
-    <ClInclude Include="logger.hpp" />
-    <ClInclude Include="third_party\argparse.hpp" />
+    <ClInclude Include="include\work_queue.hpp" />
+    <ClInclude Include="include\memory_manager.cuh" />
+    <ClInclude Include="include\kernels.cuh" />
+    <ClInclude Include="include\logger.hpp" />
+    <ClInclude Include="include\phash_cuda.cuh" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="kernels.cu" />
+    <CudaCompile Include="src\kernels.cu" />
     <CudaCompile Include="src\img_proc.cu" />
-    <CudaCompile Include="include\phash_cuda.cuh" />
     <CudaCompile Include="src\memory_manager.cu" />
-    <CudaCompile Include="src\phash_cuda.cu">
-      <FileType>Document</FileType>
-    </CudaCompile>
+    <CudaCompile Include="src\phash_cuda.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,6 +1,6 @@
 ﻿#include "kernels.cuh"
 #include "../include/phash_cuda.cuh"
-#include "../cuda_utils.hpp"
+#include "cuda_utils.hpp"
 
 #include <cuda_runtime.h>
 #include <cmath>

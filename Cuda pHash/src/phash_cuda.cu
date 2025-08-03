@@ -1,8 +1,8 @@
 ﻿#include "../include/phash_cuda.cuh"
-#include "../logger.hpp"
-#include "../work_queue.hpp"
-#include "../cuda_utils.hpp"
-#include "../kernels.cuh"
+#include "logger.hpp"
+#include "work_queue.hpp"
+#include "cuda_utils.hpp"
+#include "kernels.cuh"
 
 // System headers
 #include <algorithm>

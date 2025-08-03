@@ -3,7 +3,7 @@
 //
 
 #include "argparse.hpp"
-#include "..\Cuda pHash\include\phash_cuda.cuh"
+#include "phash_cuda.cuh"
 
 #include <algorithm>
 #include <cctype>

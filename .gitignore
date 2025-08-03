@@ -70,5 +70,7 @@ ipch/
 *.deps
 *.cache
 
-# vcpkg
+# misc
 vcpkg.applocal.log
+.claude
+CLAUDE.md

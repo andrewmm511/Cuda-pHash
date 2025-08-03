@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CUDA pHash is a high-performance, GPU-accelerated tool for computing perceptual hashes (pHash) of images. It's performant by leveraging CUDA, cuBLAS, and nvJPEG for massive parallelization of pHashes on GPU.
+CUDA pHash is a high-performance, GPU-accelerated tool for computing perceptual hashes (pHash) of images and identifying visually similar images in a dataset. It's performant by leveraging CUDA, cuBLAS, and nvJPEG for massive parallelization of pHashes on GPU.
 
 ## Build Commands
 

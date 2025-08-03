@@ -11,7 +11,7 @@
 #include <windows.h>
 
 #include "memory_manager.cuh"
-#include "../logger.hpp"
+#include "logger.hpp"
 
 /**
  * @brief Aligns a size to a specified boundary, adjusting alignment based on size.
