@@ -3,11 +3,11 @@
   <ItemGroup>
     <Filter Include="Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+      <Extensions>cpp;c;cc;cxx;cu;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd;cuh</Extensions>
     </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
@@ -15,33 +15,46 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\cuda_utils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\img_proc.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\phash.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\phash_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="third_party\argparse.hpp">
+    <ClInclude Include="include\work_queue.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\img_proc.cuh" />
-    <ClInclude Include="logger.hpp">
+    <ClInclude Include="include\memory_manager.cuh">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="kernels.cuh" />
-    <ClInclude Include="work_queue.hpp">
+    <ClInclude Include="include\kernels.cuh">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cuda_utils.hpp">
+    <ClInclude Include="include\logger.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\phash_cuda.cuh">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\img_proc.cu" />
-    <CudaCompile Include="include\phash_cuda.cuh" />
-    <CudaCompile Include="src\memory_manager.cu" />
-    <CudaCompile Include="src\phash_cuda.cu" />
-    <CudaCompile Include="include\memory_manager.cuh" />
-    <CudaCompile Include="kernels.cu" />
+    <CudaCompile Include="src\kernels.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\img_proc.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\memory_manager.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\phash_cuda.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
