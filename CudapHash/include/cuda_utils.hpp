@@ -7,15 +7,20 @@
 #include <unordered_set>
 #include <queue>
 #include <tuple>
+#include <string>
+#include <stdexcept>
 
-// CUDA error checking macro
+// CUDA headers required by CUDA_CHECK
+#include <cuda_runtime.h>
+
+// Unified CUDA error checking macro
 #define CUDA_CHECK(call) do { \
-    cudaError_t error = call; \
+    cudaError_t error = (call); \
     if (error != cudaSuccess) { \
         throw std::runtime_error(std::string("CUDA error at ") + __FILE__ + ":" + std::to_string(__LINE__) + \
                                  " - " + cudaGetErrorString(error)); \
     } \
-} while(0)
+} while (0)
 
 // Constants
 constexpr int DEFAULT_RNG_SEED = 12345;

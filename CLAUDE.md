@@ -8,11 +8,10 @@ CUDA pHash is a high-performance, GPU-accelerated tool for computing perceptual 
 
 ## Build Commands
 
-This is a Visual Studio solution with CUDA support:
+Once your tasks are complete, always run the following commands, ensuring they pass. Correct any warnings related to your changes if applicable.
 
-- **Build Solution**: Open `CudapHash.sln` in Visual Studio and build (Ctrl+Shift+B)
-- **Build Configuration**: Release x64 is the primary configuration
-- **Output**: Executables are generated in `x64\Release\`
+1. `cmake --build build --config Release`
+2. `cmake --build build -j 8 --config Release`
 
 ## Architecture
 
