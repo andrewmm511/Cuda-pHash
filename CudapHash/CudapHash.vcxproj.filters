@@ -18,15 +18,6 @@
     <ClInclude Include="include\cuda_utils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\img_proc.cuh">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\phash.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\phash_base.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\work_queue.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

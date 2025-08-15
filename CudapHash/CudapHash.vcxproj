@@ -182,9 +182,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\cuda_utils.hpp" />
-    <ClInclude Include="include\img_proc.cuh" />
-    <ClInclude Include="include\phash.h" />
-    <ClInclude Include="include\phash_base.h" />
     <ClInclude Include="include\work_queue.hpp" />
     <ClInclude Include="include\memory_manager.cuh" />
     <ClInclude Include="include\kernels.cuh" />
