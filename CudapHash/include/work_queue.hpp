@@ -42,6 +42,7 @@ public:
         if (m_items.empty()) { return nullptr; }
         Image* result = m_items.back();
         m_items.pop_back();
+        m_cond.notify_one();
         return result;
     }
 

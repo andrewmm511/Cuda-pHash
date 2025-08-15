@@ -9,16 +9,17 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 # Find CUDA
 find_package(CUDAToolkit REQUIRED)
+find_package(Threads REQUIRED)
 
 # Find cudadevrt library manually
 find_library(CUDA_CUDADEVRT_LIBRARY cudadevrt 
     HINTS ${CUDAToolkit_LIBRARY_DIR}
     PATH_SUFFIXES lib lib64)
 
-# Set CUDA architectures (compute_86,sm_86 from vcxproj)
+# Set CUDA architectures
 set(CMAKE_CUDA_ARCHITECTURES 86)
 
-# Global compile options for Release mode (matching Visual Studio settings)
+# Global compile options for Release mode
 if(CMAKE_BUILD_TYPE STREQUAL "Release" OR NOT CMAKE_BUILD_TYPE)
     # MSVC specific flags from the vcxproj files
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Oi /GL /Gy")
@@ -33,7 +34,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release" OR NOT CMAKE_BUILD_TYPE)
     set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O2")
 endif()
 
-# Set output directories to match Visual Studio structure
+# Set output directories
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build/bin/Release/x64)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build/bin/Release/x64)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build/lib/Release/x64)
@@ -43,7 +44,6 @@ set(CUDA_PHASH_DIR "${CMAKE_SOURCE_DIR}/CudapHash")
 file(TO_CMAKE_PATH "${CUDA_PHASH_DIR}" CUDA_PHASH_DIR)
 
 # CudapHash static library
-# Use GLOB to handle paths with spaces more reliably
 file(GLOB CUDA_PHASH_SOURCES "${CUDA_PHASH_DIR}/src/*.cu")
 file(GLOB CUDA_PHASH_HEADERS 
     "${CUDA_PHASH_DIR}/include/*.hpp"
@@ -84,7 +84,7 @@ target_compile_options(CudaPhashLib PRIVATE
     >
 )
 
-# Link CUDA libraries (though not needed for static lib, these were in the vcxproj)
+# Link CUDA libraries
 target_link_libraries(CudaPhashLib PUBLIC
     CUDA::cudart
     CUDA::cuda_driver
@@ -117,72 +117,59 @@ target_compile_definitions(App PRIVATE
     _CONSOLE
 )
 
-# Test library (DLL) - using Google Test or MS Unit Test
-# Note: The original uses MS Unit Test framework, but for CMake we'll use Google Test
-# You may need to adjust this based on your testing framework preference
+###########
+#  TESTS  #
+###########
 
-# Find or fetch Google Test
-include(FetchContent)
-FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.14.0
-)
-FetchContent_MakeAvailable(googletest)
+add_subdirectory(third_party/googletest)
 
-# OpenCV configuration (hardcoded path from vcxproj)
-# You should make this configurable via CMake options
-set(OPENCV_DIR "C:/opencv411/opencv-4.11.0/build/install" CACHE PATH "OpenCV installation directory")
-
-# Test DLL
-set(TEST_SOURCES
-    "Test/src/pch.cpp"
-    "Test/src/Integration.cpp"
+# Create a test executable that includes all test files
+add_executable(Tests
+    "Test/src/WorkQueueTests.cpp"
     "Test/src/Unit.cpp"
 )
 
-set(TEST_HEADERS
-    "Test/include/pch.h"
-)
-
-add_library(Test SHARED ${TEST_SOURCES} ${TEST_HEADERS})
-
-# Configure precompiled header for Test
-target_precompile_headers(Test PRIVATE "Test/include/pch.h")
-
-# Set include directories for Test
-target_include_directories(Test PRIVATE
+target_include_directories(Tests PRIVATE
     "${CUDA_PHASH_DIR}/include"
-    ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
     ${CMAKE_SOURCE_DIR}/Test/include
-    ${OPENCV_DIR}/include
+    ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
 )
 
-# Link Test with required libraries
-target_link_libraries(Test PRIVATE
+target_link_libraries(Tests PRIVATE
     CudaPhashLib
     gtest
     gtest_main
+    Threads::Threads
     CUDA::cudart
-    ${CUDA_CUDADEVRT_LIBRARY}
     CUDA::nvjpeg
-    CUDA::cublas
-    ${OPENCV_DIR}/x64/vc17/lib/opencv_world4110.lib
-    ${OPENCV_DIR}/x64/vc17/lib/opencv_img_hash4110.lib
 )
 
-# Set compile definitions for Test
-target_compile_definitions(Test PRIVATE
-    NDEBUG
+# Keep the WorkQueueTests target for backwards compatibility
+add_executable(WorkQueueTests
+    "Test/src/WorkQueueTests.cpp"
 )
 
-# Enable testing
+target_include_directories(WorkQueueTests PRIVATE
+    "${CUDA_PHASH_DIR}/include"
+    ${CMAKE_SOURCE_DIR}/Test/include
+)
+
+target_link_libraries(WorkQueueTests PRIVATE
+    gtest
+    gtest_main
+    Threads::Threads
+)
+
 enable_testing()
-add_test(NAME CudaPHashTests COMMAND Test)
 
-# Add custom target to match VS solution structure
+# For multi-config generators (e.g., Visual Studio), reference the target file so CTest
+# can locate the correct config binary. Invoke ctest with -C <Debug|Release>.
+add_test(NAME WorkQueueTests COMMAND $<TARGET_FILE:WorkQueueTests>)
+add_test(NAME AllTests COMMAND $<TARGET_FILE:Tests>)
+
+# Aggregate target
 add_custom_target(Solution ALL
-    DEPENDS CudaPhashLib App Test
+    DEPENDS CudaPhashLib App WorkQueueTests Tests
 )
 
 # Print configuration summary
