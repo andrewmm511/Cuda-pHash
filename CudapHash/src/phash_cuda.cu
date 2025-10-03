@@ -3,6 +3,7 @@
 #include "work_queue.hpp"
 #include "cuda_utils.hpp"
 #include "kernels.cuh"
+#include "memory_manager.cuh"
 
 // System headers
 #include <algorithm>
@@ -48,7 +49,7 @@ CudaPhash::CudaPhash(int hashSize, int highFreqFactor, int batchSize, int thread
     m_threads(threads),
     m_prefetchFactor(prefetchFactor),
     m_handle(nullptr),
-    m_memMgr(MemoryManager()) {
+    m_memMgr(std::make_unique<MemoryManager>()) {
     if (hashSize < 5 || hashSize > 11) { throw std::invalid_argument("hashSize must be between 5 and 11!"); }
     if (highFreqFactor < 1 || highFreqFactor > 8) { throw std::invalid_argument("highFreqFactor must be between 1 and 8!"); }
 
@@ -59,7 +60,7 @@ CudaPhash::CudaPhash(int hashSize, int highFreqFactor, int batchSize, int thread
         DEBUG("Main", "Setting concurrency to ", m_threads, " threads.");
     }
 
-    nvjpegStatus_t status = nvjpegCreateExV2(NVJPEG_BACKEND_GPU_HYBRID, m_memMgr.getNvjDevAllocator(), m_memMgr.getNvjPinnedAllocator(), 0, &m_nvjHandle);
+    nvjpegStatus_t status = nvjpegCreateExV2(NVJPEG_BACKEND_GPU_HYBRID, m_memMgr->getNvjDevAllocator(), m_memMgr->getNvjPinnedAllocator(), 0, &m_nvjHandle);
     if (status != NVJPEG_STATUS_SUCCESS) {
         ERROR_L("Main", "nvjpegCreateExV2 failed with status: ", status);
         throw std::runtime_error("nvJPEG handle creation failed");
@@ -164,7 +165,7 @@ void CudaPhash::reader(WorkQueue& inQueue, WorkQueue& outQueue, int threadId) {
         }
         img->fileSize = static_cast<size_t>(fileSize);
 
-        unsigned char* pinnedMem = m_memMgr.Allocate<unsigned char>(MemoryManager::PINNED_POOL, img->fileSize);
+        unsigned char* pinnedMem = m_memMgr->Allocate<unsigned char>(MemoryManager::PINNED_POOL, img->fileSize);
         img->rawFileData = pinnedMem;
 
         file.seekg(0, std::ios::beg);
@@ -175,7 +176,7 @@ void CudaPhash::reader(WorkQueue& inQueue, WorkQueue& outQueue, int threadId) {
 
         if (info != NVJPEG_STATUS_SUCCESS) {
             ERROR_L(id, "nvjpegGetImageInfo failed for ", img->path);
-            m_memMgr.Free<unsigned char>(MemoryManager::PINNED_POOL, pinnedMem);
+            m_memMgr->Free<unsigned char>(MemoryManager::PINNED_POOL, pinnedMem);
             img->rawFileData = nullptr;
             continue;
         }
@@ -224,7 +225,7 @@ void CudaPhash::decoder(WorkQueue& inQueue, WorkQueue& outQueue) {
 
             size_t decodeSize = img->gpuData.originalWidth * img->gpuData.originalHeight;
             totalSize += decodeSize;
-            unsigned char* dMem = m_memMgr.Allocate<unsigned char>(MemoryManager::DEVICE_POOL, decodeSize);
+            unsigned char* dMem = m_memMgr->Allocate<unsigned char>(MemoryManager::DEVICE_POOL, decodeSize);
             img->gpuData.decodedPtr = dMem;
 
             memset(&outImages[i], 0, sizeof(nvjpegImage_t));
@@ -254,7 +255,7 @@ void CudaPhash::decoder(WorkQueue& inQueue, WorkQueue& outQueue) {
 
                 if (singleDecode != NVJPEG_STATUS_SUCCESS) {
                     WARN(__func__, "Failed to decode image ", img->path, ". Skipping. Error code: ", singleDecode);
-                    m_memMgr.Free(MemoryManager::DEVICE_POOL, img->gpuData.decodedPtr);
+                    m_memMgr->Free(MemoryManager::DEVICE_POOL, img->gpuData.decodedPtr);
                     img->gpuData.decodedPtr = nullptr;
                 }
                 else {
@@ -276,7 +277,7 @@ void CudaPhash::decoder(WorkQueue& inQueue, WorkQueue& outQueue) {
         }
 
         for (auto& img : imgs) {
-            m_memMgr.Free(MemoryManager::PINNED_POOL, img->rawFileData);
+            m_memMgr->Free(MemoryManager::PINNED_POOL, img->rawFileData);
             img->rawFileData = nullptr;
         }
     }
@@ -301,7 +302,7 @@ void CudaPhash::resizer(WorkQueue& inQueue, WorkQueue& outQueue) {
 
         std::vector<GpuData> gpuDataVec(batchSize);
         for (size_t i = 0; i < batchSize; ++i) {
-            imgs[i]->gpuData.resizedPtr = m_memMgr.Allocate<float>(MemoryManager::DEVICE_POOL, m_imgSize * m_imgSize);
+            imgs[i]->gpuData.resizedPtr = m_memMgr->Allocate<float>(MemoryManager::DEVICE_POOL, m_imgSize * m_imgSize);
             gpuDataVec[i] = imgs[i]->gpuData;
         }
 
@@ -313,7 +314,7 @@ void CudaPhash::resizer(WorkQueue& inQueue, WorkQueue& outQueue) {
         cudaStreamSynchronize(m_resizeStream);
 
         for (auto& img : imgs) {
-            m_memMgr.Free(MemoryManager::DEVICE_POOL, img->gpuData.decodedPtr);
+            m_memMgr->Free(MemoryManager::DEVICE_POOL, img->gpuData.decodedPtr);
             img->gpuData.decodedPtr = nullptr;
         }
 
@@ -383,7 +384,7 @@ void CudaPhash::hasher(WorkQueue& inQueue) {
         cudaStreamSynchronize(m_hashStream);
 
         for (auto& img : imgs) {
-            m_memMgr.Free(MemoryManager::DEVICE_POOL, img->gpuData.resizedPtr);
+            m_memMgr->Free(MemoryManager::DEVICE_POOL, img->gpuData.resizedPtr);
             img->gpuData.resizedPtr = nullptr;
         }
 
@@ -403,7 +404,7 @@ std::vector<Image> CudaPhash::runPipeline(const std::vector<std::string>& imageP
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_hashImgPtrs), imgs.size() * sizeof(float*)));
     CUDA_CHECK(cudaMalloc(&d_hashes, imgs.size() * sizeof(pHash)));
 
-    m_memMgr.InitializePools();
+    m_memMgr->InitializePools();
 
     WorkQueue inputQueue(imgs.size(), "input");
     WorkQueue decodeQueue(m_batchSize * m_prefetchFactor, "decode");

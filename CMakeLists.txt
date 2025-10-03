@@ -60,6 +60,10 @@ target_include_directories(CudaPhashLib PUBLIC
     "${CUDA_PHASH_DIR}/include"
 )
 
+target_include_directories(CudaPhashLib PRIVATE
+    "${CUDA_PHASH_DIR}/src"
+)
+
 # Set compile definitions for CudapHash
 target_compile_definitions(CudaPhashLib PRIVATE
     WIN32
@@ -131,6 +135,7 @@ add_executable(Tests
 
 target_include_directories(Tests PRIVATE
     "${CUDA_PHASH_DIR}/include"
+    "${CUDA_PHASH_DIR}/src"
     ${CMAKE_SOURCE_DIR}/Test/include
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
 )
@@ -151,6 +156,7 @@ add_executable(WorkQueueTests
 
 target_include_directories(WorkQueueTests PRIVATE
     "${CUDA_PHASH_DIR}/include"
+    "${CUDA_PHASH_DIR}/src"
     ${CMAKE_SOURCE_DIR}/Test/include
 )
 

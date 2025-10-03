@@ -3,12 +3,12 @@
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <memory>
 #include <nvjpeg.h>
 #include <cublas_v2.h>
 
-#include "memory_manager.cuh"
-
 class WorkQueue;
+class MemoryManager;
 
 struct GpuData {
     unsigned char* decodedPtr = nullptr;
@@ -89,7 +89,7 @@ private:
 
     // CUDA handles
     cublasHandle_t m_handle;
-    MemoryManager m_memMgr;
+    std::unique_ptr<MemoryManager> m_memMgr;
     nvjpegHandle_t m_nvjHandle;
     nvjpegJpegState_t m_nvjSingleDecoderState;
     nvjpegJpegState_t m_nvjDecoderState;

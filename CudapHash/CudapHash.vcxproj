@@ -116,7 +116,7 @@
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)third_party;$(ProjectDir)include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)third_party;$(ProjectDir)include;$(ProjectDir)src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -124,7 +124,7 @@
     </Link>
     <CudaCompile>
       <CudaRuntime>Shared</CudaRuntime>
-      <Include>$(ProjectDir)include</Include>
+      <Include>$(ProjectDir)include;$(ProjectDir)src</Include>
       <AdditionalOptions>-std=c++20 -Xcompiler "/std:c++20" %(AdditionalOptions)</AdditionalOptions>
       <CompileOut>$(IntDir)%(Filename)%(Extension).obj</CompileOut>
       <CudaIntDir>$(IntDir)</CudaIntDir>
@@ -155,7 +155,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)third_party;$(ProjectDir)include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)third_party;$(ProjectDir)include;$(ProjectDir)src</AdditionalIncludeDirectories>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -174,23 +174,22 @@
       <CodeGeneration>compute_86,sm_86</CodeGeneration>
       <GPUDebugInfo>true</GPUDebugInfo>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <Include>$(ProjectDir)include</Include>
+      <Include>$(ProjectDir)include;$(ProjectDir)src</Include>
       <AdditionalOptions>-std=c++20 -Xcompiler "/std:c++20" %(AdditionalOptions)</AdditionalOptions>
       <CompileOut>$(IntDir)%(Filename)%(Extension).obj</CompileOut>
       <CudaIntDir>$(IntDir)</CudaIntDir>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\cuda_utils.hpp" />
-    <ClInclude Include="include\work_queue.hpp" />
-    <ClInclude Include="include\memory_manager.cuh" />
-    <ClInclude Include="include\kernels.cuh" />
-    <ClInclude Include="include\logger.hpp" />
+    <ClInclude Include="src\cuda_utils.hpp" />
+    <ClInclude Include="src\work_queue.hpp" />
+    <ClInclude Include="src\memory_manager.cuh" />
+    <ClInclude Include="src\kernels.cuh" />
+    <ClInclude Include="src\logger.hpp" />
     <ClInclude Include="include\phash_cuda.cuh" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels.cu" />
-    <CudaCompile Include="src\img_proc.cu" />
     <CudaCompile Include="src\memory_manager.cu" />
     <CudaCompile Include="src\phash_cuda.cu" />
   </ItemGroup>

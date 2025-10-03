@@ -15,19 +15,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\cuda_utils.hpp">
+    <ClInclude Include="src\cuda_utils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\work_queue.hpp">
+    <ClInclude Include="src\work_queue.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\memory_manager.cuh">
+    <ClInclude Include="src\memory_manager.cuh">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\kernels.cuh">
+    <ClInclude Include="src\kernels.cuh">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\logger.hpp">
+    <ClInclude Include="src\logger.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\phash_cuda.cuh">
@@ -36,9 +36,6 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels.cu">
-      <Filter>Source Files</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\img_proc.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
     <CudaCompile Include="src\memory_manager.cu">

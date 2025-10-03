@@ -20,7 +20,7 @@
 struct FreeSegment {
     size_t offset;
     size_t size;
-};
+}; 
 
 /**
  * @struct MemoryRegion
