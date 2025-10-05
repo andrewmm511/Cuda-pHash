@@ -3,6 +3,8 @@
 //
 
 #include "argparse.hpp"
+#include "rang.hpp"
+#include "tabulate.hpp"
 #include "phash_cuda.cuh"
 
 #include <algorithm>
@@ -18,6 +20,8 @@
 #include <chrono>
 
 namespace fs = std::filesystem;
+using namespace rang;
+using namespace tabulate;
 
 /* --- helpers --- */
 
@@ -160,20 +164,88 @@ static void saveSimilarImagesCSV(const std::string& path, const std::vector<Imag
     std::cout << "Similar images list saved to " << path << '\n';
 }
 
-static void printConfiguration(int hashSize, int freqFactor, int batchSize, int threads, int threshold = -1)
+static void printConfiguration(std::string folder, int numImages, int hashSize, int freqFactor, int batchSize, int threads, int threshold = -1)
 {
-    std::cout << "Configuration:\n";
-    std::cout << "  Hash size: " << hashSize << "x" << hashSize
-        << " (" << (hashSize * hashSize) << " bits)\n";
-    std::cout << "  Image size for analysis: " << (hashSize * freqFactor) << "x" << (hashSize * freqFactor)
-        << " pixels\n";
-    std::cout << "  GPU batch size: " << batchSize << " images\n";
-    std::cout << "  CPU threads: " << (threads == -1 ? "auto-detect" : std::to_string(threads)) << "\n";
+    std::cout << "\n  .d8888b. 88    88  888888b.      .d8               88    88                88    " << std::endl;
+    std::cout << " d88P  Y8b 88    88  88   Y8b     d888b              88    88                88    " << std::endl;
+    std::cout << " 888       88    88  88    88    d8P888      8888b.  88888888   8888b. .d888 8888b. " << std::endl;
+    std::cout << " 888       88    88  88    88   d8P  888     88 \"8b  88    88      \"8b  \"Y8. 88  8b" << std::endl;
+    std::cout << " Y88b  d8P Y8b  d8P  88   d8P  d888888888    88  88  88    88  888  88    88 88  88 " << std::endl;
+    std::cout << "  \"Y8888P\"  \"Y888P\"  888888P  d8P      888   8888P\"  88    88  \"Y88888 888P' 88  88 " << std::endl;
+    std::cout << "                                             88                                    " << std::endl;
+    std::cout << "                                             88                                    \n" << std::endl;
+
+	int colWidth = 16;
+    int tableWidth = (threshold >= 0) ? (colWidth * 5) + 7 : (colWidth * 4) + 5;
+
+    auto centerText = [tableWidth](const std::string& text) {
+        int textLen = text.length();
+        if (textLen >= tableWidth)  return text;
+        int leftPadding = (tableWidth - textLen) / 2;
+        return std::string(leftPadding, ' ') + text;
+    };
+
+    std::cout << style::italic << centerText(folder) << style::reset << std::endl;
+    std::cout << style::italic << centerText(std::to_string(numImages) + " images") << style::reset << std::endl;
+
+    std::string hashSizeStr = std::to_string(hashSize) + "x" + std::to_string(hashSize) + " (" + std::to_string(hashSize * hashSize) + " bits)";
+    std::string imgSizeStr = std::to_string(hashSize * freqFactor) + "x" + std::to_string(hashSize * freqFactor) + " pixels";
+    std::string batchSizeStr = std::to_string(batchSize);
+    std::string threadsStr = (threads == -1 ? "auto" : std::to_string(threads));
+
+    Table::Row_t headerRow = { "Hash Size", "Img Size", "GPU Batch", "CPU Threads" };
+    Table::Row_t dataRow = { hashSizeStr, imgSizeStr, batchSizeStr, threadsStr };
+
     if (threshold >= 0) {
-        std::cout << "  Similarity threshold: " << threshold
-            << " (lower = more similar, 0 = identical)\n";
+        headerRow.push_back("Threshold");
+        dataRow.push_back(std::to_string(threshold));
     }
-    std::cout << "\n";
+
+    Table configurations;
+    configurations.add_row(headerRow);
+    configurations.add_row(dataRow);
+    configurations.format().width(colWidth).font_align(FontAlign::center);
+    configurations[0].format().font_color(Color::yellow).font_style({ FontStyle::bold });
+
+    std::cout << configurations << std::endl;
+}
+
+static void printHashResults(std::vector<std::string> paths, std::vector<pHash> hashes, std::string outputPath)
+{
+    int tableWidth = (4 * 16) + 2;
+    int colWidth = tableWidth / 2;
+
+    auto centerText = [tableWidth](const std::string& text) {
+        int textLen = text.length();
+        if (textLen >= tableWidth)  return text;
+        int leftPadding = ((tableWidth + 4) - textLen) / 2;
+        return std::string(leftPadding, ' ') + text;
+        };
+
+    std::cout << style::italic << centerText("Results") << style::reset << std::endl;
+
+    Table::Row_t headerRow = { "File", "Hash (Hex)" };
+    std::vector<Table::Row_t> dataRows;
+
+    for (size_t i = 0; i < std::min<size_t>(5, hashes.size()); ++i) {
+		dataRows.push_back({ fs::path(paths[i]).filename().string(), pHashToHex(hashes[i], 8) });
+    }
+
+    Table results;
+    results.add_row(headerRow);
+
+    for (const auto& row : dataRows) {
+        results.add_row(row);
+	}
+
+    results.format().width(colWidth).font_align(FontAlign::center);
+    results[0].format().font_color(Color::yellow).font_style({ FontStyle::bold });
+
+    std::cout << results << std::endl;
+
+    if (hashes.size() > 5 && outputPath != "") {
+        std::cout << style::italic << fg::green << centerText("All " + std::to_string(hashes.size()) + " hashes saved to " + outputPath) << style::reset << fg::reset << std::endl;
+    }
 }
 
 /* --- command handlers --- */
@@ -206,24 +278,17 @@ static int handleHashCommand(argparse::ArgumentParser& program)
     }
 
     // Collect files
-    std::cout << "Searching for images in " << directory.string();
-    if (recursive) std::cout << " (recursive)";
-    std::cout << "...\n";
-
     const auto filePaths = collectImagePaths(directory, extensions, recursive);
     if (filePaths.empty()) {
         std::cout << "No images found.\n";
         return 0;
     }
 
-    std::cout << "Found " << filePaths.size() << " image(s)\n\n";
-
     // Compute hashes
     try {
         auto start = std::chrono::high_resolution_clock::now();
 
-        std::cout << "Computing perceptual hashes...\n";
-        printConfiguration(hashSize, freqFactor, batchSize, threads);
+        printConfiguration(directory.string(), filePaths.size(), hashSize, freqFactor, batchSize, threads);
 
         CudaPhash phash(hashSize, freqFactor, batchSize, threads, prefetchFactor, logLevel);
         const auto hashes = phash.computeHashes(filePaths);
@@ -240,14 +305,8 @@ static int handleHashCommand(argparse::ArgumentParser& program)
         }
 
         // Display first few hashes as examples
-        std::cout << "\nHashes:\n";
-        for (size_t i = 0; i < std::min<size_t>(5, hashes.size()); ++i) {
-            std::cout << "  " << fs::path(filePaths[i]).filename().string()
-                << ": " << pHashToHex(hashes[i], hashSize) << '\n';
-        }
-        if (hashes.size() > 5) {
-            std::cout << "  ... and " << (hashes.size() - 5) << " more\n";
-        }
+        printHashResults(filePaths, hashes, outputPath);
+        
     }
     catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << '\n';
@@ -315,7 +374,7 @@ static int handleSimilarCommand(argparse::ArgumentParser& program)
         auto start = std::chrono::high_resolution_clock::now();
 
         std::cout << "Finding visually similar images...\n";
-        printConfiguration(hashSize, freqFactor, batchSize, threads, threshold);
+        printConfiguration(directory.string(), filePaths.size(), hashSize, freqFactor, batchSize, threads, threshold);
 
         if (dryRun) {
             std::cout << "(DRY RUN - no files will be deleted)\n\n";
