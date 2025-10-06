@@ -41,7 +41,7 @@
 #define stat _stat64
 #endif
 
-CudaPhash::CudaPhash(int hashSize, int highFreqFactor, int batchSize, int threads, int prefetchFactor, int logLevel)
+CudaPhash::CudaPhash(int hashSize, int highFreqFactor, int batchSize, int threads, int prefetchFactor, int logLevel, ProgressCallback progressCb)
     : m_hashSize(hashSize),
     m_highFreqFactor(highFreqFactor),
     m_imgSize(hashSize* highFreqFactor),
@@ -49,7 +49,9 @@ CudaPhash::CudaPhash(int hashSize, int highFreqFactor, int batchSize, int thread
     m_threads(threads),
     m_prefetchFactor(prefetchFactor),
     m_handle(nullptr),
-    m_memMgr(std::make_unique<MemoryManager>()) {
+    m_memMgr(std::make_unique<MemoryManager>()),
+    m_progressCallback(progressCb),
+    m_progressTracker(nullptr) {
     if (hashSize < 5 || hashSize > 11) { throw std::invalid_argument("hashSize must be between 5 and 11!"); }
     if (highFreqFactor < 1 || highFreqFactor > 8) { throw std::invalid_argument("highFreqFactor must be between 1 and 8!"); }
 
@@ -154,6 +156,11 @@ void CudaPhash::reader(WorkQueue& inQueue, WorkQueue& outQueue, int threadId) {
         std::ifstream file(img->path, std::ios::binary | std::ios::ate);
         if (!file.is_open()) {
             WARN(id, "Could not open file: ", img->path);
+
+            // Update failure count
+            if (m_progressTracker) {
+                m_progressTracker->updateFailed(1);
+            }
             continue;
         }
 
@@ -161,6 +168,11 @@ void CudaPhash::reader(WorkQueue& inQueue, WorkQueue& outQueue, int threadId) {
         if (fileSize <= 0) {
             DEBUG(id, "Empty or invalid file: ", img->path);
             file.close();
+
+            // Update failure count
+            if (m_progressTracker) {
+                m_progressTracker->updateFailed(1);
+            }
             continue;
         }
         img->fileSize = static_cast<size_t>(fileSize);
@@ -178,6 +190,11 @@ void CudaPhash::reader(WorkQueue& inQueue, WorkQueue& outQueue, int threadId) {
             ERROR_L(id, "nvjpegGetImageInfo failed for ", img->path);
             m_memMgr->Free<unsigned char>(MemoryManager::PINNED_POOL, pinnedMem);
             img->rawFileData = nullptr;
+
+            // Update failure count
+            if (m_progressTracker) {
+                m_progressTracker->updateFailed(1);
+            }
             continue;
         }
 
@@ -185,6 +202,11 @@ void CudaPhash::reader(WorkQueue& inQueue, WorkQueue& outQueue, int threadId) {
         img->gpuData.originalHeight = heights[0];
 
         outQueue.push(img);
+
+        // Update progress tracker
+        if (m_progressTracker) {
+            m_progressTracker->updateRead(1);
+        }
     }
 }
 
@@ -257,6 +279,11 @@ void CudaPhash::decoder(WorkQueue& inQueue, WorkQueue& outQueue) {
                     WARN(__func__, "Failed to decode image ", img->path, ". Skipping. Error code: ", singleDecode);
                     m_memMgr->Free(MemoryManager::DEVICE_POOL, img->gpuData.decodedPtr);
                     img->gpuData.decodedPtr = nullptr;
+
+                    // Update failure count
+                    if (m_progressTracker) {
+                        m_progressTracker->updateFailed(1);
+                    }
                 }
                 else {
                     DEBUG(__func__, "SUCCESSFUL -- ", img->path);
@@ -268,12 +295,23 @@ void CudaPhash::decoder(WorkQueue& inQueue, WorkQueue& outQueue) {
 
             INFO(__func__, "Individual decode succeeded for ", successfulImages.size(), " of ", imgs.size(), " images.");
 
-            if (!successfulImages.empty()) { outQueue.pushMany(successfulImages); }
+            if (!successfulImages.empty()) {
+                outQueue.pushMany(successfulImages);
+                // Update progress tracker for successful decodes
+                if (m_progressTracker) {
+                    m_progressTracker->updateDecoded(successfulImages.size());
+                }
+            }
 
         }
         else {
             INFO(__func__, "Decoded ", imgs.size(), " images.");
             outQueue.pushMany(imgs);
+
+            // Update progress tracker
+            if (m_progressTracker) {
+                m_progressTracker->updateDecoded(imgs.size());
+            }
         }
 
         for (auto& img : imgs) {
@@ -319,6 +357,11 @@ void CudaPhash::resizer(WorkQueue& inQueue, WorkQueue& outQueue) {
         }
 
         outQueue.pushMany(imgs);
+
+        // Update progress tracker
+        if (m_progressTracker) {
+            m_progressTracker->updateResized(imgs.size());
+        }
 
         INFO(id, "Resized ", imgs.size(), " images.");
     }
@@ -389,6 +432,12 @@ void CudaPhash::hasher(WorkQueue& inQueue) {
         }
 
         idx += imgs.size();
+
+        // Update progress tracker
+        if (m_progressTracker) {
+            m_progressTracker->updateHashed(imgs.size());
+        }
+
         INFO(__func__, "Hashed ", imgs.size(), " images.");
     }
 }
@@ -400,6 +449,9 @@ std::vector<Image> CudaPhash::runPipeline(const std::vector<std::string>& imageP
     for (size_t i = 0; i < imagePaths.size(); ++i) {
         imgs[i].path = imagePaths[i];
     }
+
+    // Initialize progress tracker with the callback from constructor
+    m_progressTracker = std::make_unique<ProgressTracker>(imgs.size(), m_progressCallback);
 
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_hashImgPtrs), imgs.size() * sizeof(float*)));
     CUDA_CHECK(cudaMalloc(&d_hashes, imgs.size() * sizeof(pHash)));
@@ -439,6 +491,11 @@ std::vector<Image> CudaPhash::runPipeline(const std::vector<std::string>& imageP
 
     auto end = std::ranges::remove_if(imgs, [](const Image& img) { return img.hashOffset == static_cast<size_t>(-1); }).begin();
     imgs.erase(end, imgs.end());
+
+    // Force final progress update
+    if (m_progressTracker) {
+        m_progressTracker->forceUpdate();
+    }
 
     return imgs;
 }

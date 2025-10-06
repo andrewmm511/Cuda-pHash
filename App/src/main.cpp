@@ -5,6 +5,7 @@
 #include "argparse.hpp"
 #include "rang.hpp"
 #include "tabulate.hpp"
+#include "indicators.hpp"
 #include "phash_cuda.cuh"
 
 #include <algorithm>
@@ -19,11 +20,41 @@
 #include <vector>
 #include <chrono>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 namespace fs = std::filesystem;
 using namespace rang;
 using namespace tabulate;
 
 /* --- helpers --- */
+
+#ifdef _WIN32
+static void hideCursor() {
+    HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO info;
+    info.dwSize = 100;
+    info.bVisible = FALSE;
+    SetConsoleCursorInfo(consoleHandle, &info);
+}
+
+static void showCursor() {
+    HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO info;
+    info.dwSize = 100;
+    info.bVisible = TRUE;
+    SetConsoleCursorInfo(consoleHandle, &info);
+}
+#else
+static void hideCursor() {
+    std::cout << "\033[?25l" << std::flush;  // ANSI escape code to hide cursor
+}
+
+static void showCursor() {
+    std::cout << "\033[?25h" << std::flush;  // ANSI escape code to show cursor
+}
+#endif
 
 static std::string toLower(std::string s)
 {
@@ -207,7 +238,7 @@ static void printConfiguration(std::string folder, int numImages, int hashSize, 
     configurations.format().width(colWidth).font_align(FontAlign::center);
     configurations[0].format().font_color(Color::yellow).font_style({ FontStyle::bold });
 
-    std::cout << configurations << std::endl;
+    std::cout << configurations << std::endl << std::endl;
 }
 
 static void printHashResults(std::vector<std::string> paths, std::vector<pHash> hashes, std::string outputPath)
@@ -290,14 +321,110 @@ static int handleHashCommand(argparse::ArgumentParser& program)
 
         printConfiguration(directory.string(), filePaths.size(), hashSize, freqFactor, batchSize, threads);
 
-        CudaPhash phash(hashSize, freqFactor, batchSize, threads, prefetchFactor, logLevel);
+        hideCursor();
+
+        indicators::ProgressBar total_bar{
+            indicators::option::BarWidth{30},
+            indicators::option::PrefixText{"Total  "},
+            indicators::option::Start{"["},
+            indicators::option::Fill{"="},
+            indicators::option::Lead{">"},
+            indicators::option::Remainder{" "},
+            indicators::option::End{"]"},
+            indicators::option::ShowPercentage{true},
+            indicators::option::ShowElapsedTime{true},
+            indicators::option::ShowRemainingTime{true},
+            indicators::option::Stream{std::cout}
+        };
+
+        indicators::ProgressBar read_bar{
+            indicators::option::BarWidth{30},
+            indicators::option::PrefixText{"Read   "},
+            indicators::option::Start{"["},
+            indicators::option::Fill{"="},
+            indicators::option::Lead{">"},
+            indicators::option::Remainder{" "},
+            indicators::option::End{"]"},
+            indicators::option::ShowPercentage{true},
+            indicators::option::Stream{std::cout}
+        };
+
+        indicators::ProgressBar decode_bar{
+            indicators::option::BarWidth{30},
+            indicators::option::PrefixText{"Decode "},
+            indicators::option::Start{"["},
+            indicators::option::Fill{"="},
+            indicators::option::Lead{">"},
+            indicators::option::Remainder{" "},
+            indicators::option::End{"]"},
+            indicators::option::ShowPercentage{true},
+            indicators::option::Stream{std::cout}
+        };
+
+        indicators::ProgressBar resize_bar{
+            indicators::option::BarWidth{30},
+            indicators::option::PrefixText{"Resize "},
+            indicators::option::Start{"["},
+            indicators::option::Fill{"="},
+            indicators::option::Lead{">"},
+            indicators::option::Remainder{" "},
+            indicators::option::End{"]"},
+            indicators::option::ShowPercentage{true},
+            indicators::option::Stream{std::cout}
+        };
+
+        indicators::ProgressBar hash_bar{
+            indicators::option::BarWidth{30},
+            indicators::option::PrefixText{"Hash   "},
+            indicators::option::Start{"["},
+            indicators::option::Fill{"="},
+            indicators::option::Lead{">"},
+            indicators::option::Remainder{" "},
+            indicators::option::End{"]"},
+            indicators::option::ShowPercentage{true},
+            indicators::option::Stream{std::cout}
+        };
+
+        indicators::MultiProgress<indicators::ProgressBar, 5> bars(total_bar, read_bar, decode_bar, resize_bar, hash_bar);
+
+        // Create progress callback that updates the progress bar
+        auto progressCallback = [&bars, &total_bar](const ProgressInfo& info) {
+            bars.set_progress<0>(static_cast<size_t>(info.percentComplete()));
+
+            // Change Total bar color to yellow if there are failures
+            if (info.hasFailures()) {
+                total_bar.set_option(indicators::option::ForegroundColor{indicators::Color::yellow});
+
+                std::string failureText = "(" + std::to_string(info.failedImages) + " failed image(s))";
+                total_bar.set_option(indicators::option::PostfixText{failureText});
+            }
+
+            float readPercent = (info.totalImages > 0) ? (static_cast<float>(info.readCompleted) / info.totalImages) * 100 : 0;
+            float decodePercent = (info.totalImages > 0) ? (static_cast<float>(info.decodedCompleted) / info.totalImages) * 100 : 0;
+            float resizePercent = (info.totalImages > 0) ? (static_cast<float>(info.resizedCompleted) / info.totalImages) * 100 : 0;
+            float hashPercent = (info.totalImages > 0) ? (static_cast<float>(info.hashedCompleted) / info.totalImages) * 100 : 0;
+
+            bars.set_progress<1>(static_cast<size_t>(readPercent));
+            bars.set_progress<2>(static_cast<size_t>(decodePercent));
+            bars.set_progress<3>(static_cast<size_t>(resizePercent));
+            bars.set_progress<4>(static_cast<size_t>(hashPercent));
+        };
+
+        CudaPhash phash(hashSize, freqFactor, batchSize, threads, prefetchFactor, logLevel, progressCallback);
         const auto hashes = phash.computeHashes(filePaths);
+
+        showCursor();
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-        std::cout << "\nCompleted in " << duration.count() / 1000.0 << " seconds\n";
-        std::cout << "Successfully computed " << hashes.size() << " hashes\n";
+        std::cout << fg::green << "\nCompleted " << filePaths.size() - hashes.size() << " images in " << duration.count() / 1000.0 << " seconds\n" << fg::reset;
+
+        // Report failures if any
+        size_t failedCount = filePaths.size() - hashes.size();
+        if (failedCount > 0) {
+            std::cout << fg::yellow << "Warning: " << failedCount << " image(s) failed to process" << fg::reset << "\n";
+        }
 
         // Save to CSV if requested
         if (!outputPath.empty()) {
@@ -306,9 +433,10 @@ static int handleHashCommand(argparse::ArgumentParser& program)
 
         // Display first few hashes as examples
         printHashResults(filePaths, hashes, outputPath);
-        
+
     }
     catch (const std::exception& e) {
+        showCursor();  // Restore cursor on error
         std::cerr << "Error: " << e.what() << '\n';
         return 1;
     }

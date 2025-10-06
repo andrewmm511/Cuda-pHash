@@ -4,8 +4,10 @@
 #include <string>
 #include <cstdint>
 #include <memory>
+#include <functional>
 #include <nvjpeg.h>
 #include <cublas_v2.h>
+#include "progress_tracker.hpp"
 
 class WorkQueue;
 class MemoryManager;
@@ -37,6 +39,8 @@ struct Image {
  */
 class CudaPhash {
 public:
+    using ProgressCallback = std::function<void(const ProgressInfo&)>;
+
     /**
      * @brief Constructor
      * @param hashSize        Size of the final hash dimension (e.g. 8)
@@ -45,8 +49,10 @@ public:
      * @param threads         Number of threads for file I/O (-1 for auto)
      * @param prefetchFactor  Queue size multiplier for prefetching
      * @param logLevel        Logging verbosity level
+     * @param progressCb      Optional callback for progress updates
      */
-    CudaPhash(int hashSize, int highFreqFactor, int batchSize = 500, int threads = -1, int prefetchFactor = 8, int logLevel = 1U);
+    CudaPhash(int hashSize, int highFreqFactor, int batchSize = 500, int threads = -1,
+              int prefetchFactor = 8, int logLevel = 1U, ProgressCallback progressCb = nullptr);
 
     /**
      * @brief Destructor
@@ -113,6 +119,10 @@ private:
     // Hash stage memory
     const float** d_hashImgPtrs = nullptr;
     pHash* d_hashes = nullptr;
+
+    // Progress tracking
+    ProgressCallback m_progressCallback;
+    std::unique_ptr<ProgressTracker> m_progressTracker;
 
     // Pipeline methods
     std::vector<Image> runPipeline(const std::vector<std::string>& imagePaths);

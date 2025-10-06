@@ -186,12 +186,14 @@
     <ClInclude Include="src\memory_manager.cuh" />
     <ClInclude Include="src\kernels.cuh" />
     <ClInclude Include="src\logger.hpp" />
+	<ClInclude Include="include\progress_tracker.hpp" />
     <ClInclude Include="include\phash_cuda.cuh" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels.cu" />
     <CudaCompile Include="src\memory_manager.cu" />
     <CudaCompile Include="src\phash_cuda.cu" />
+	<CudaCompile Include="src\progress_tracker.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
