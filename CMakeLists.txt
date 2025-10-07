@@ -97,13 +97,18 @@ target_link_libraries(CudaPhashLib PUBLIC
 )
 
 # App executable
-add_executable(App "App/src/main.cpp")
+add_executable(App
+    "App/src/main.cpp"
+    "App/src/helpers.cpp"
+    "App/src/save_results.cpp"
+)
 
 # Set include directories for App
 target_include_directories(App PRIVATE
     "${CUDA_PHASH_DIR}/include"
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
     ${CMAKE_SOURCE_DIR}/third_party
+    ${CMAKE_SOURCE_DIR}/App/include
 )
 
 # Link App with CudapHash library and CUDA runtime

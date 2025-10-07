@@ -113,7 +113,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CudapHash\include;$(CudaToolkitIncludeDir);$(SolutionDir)third_party</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CudapHash\include;$(CudaToolkitIncludeDir);$(SolutionDir)third_party;$(SolutionDir)App\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -131,7 +131,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalIncludeDirectories>$(SolutionDir)CudapHash\include;$(CudaToolkitIncludeDir);$(SolutionDir)third_party</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CudapHash\include;$(CudaToolkitIncludeDir);$(SolutionDir)third_party;$(SolutionDir)App\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -144,6 +144,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\helpers.cpp" />
+    <ClCompile Include="src\save_results.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\helpers.hpp" />
+    <ClInclude Include="include\save_results.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CudapHash\CudapHash.vcxproj">
