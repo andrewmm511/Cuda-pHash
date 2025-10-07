@@ -1,5 +1,5 @@
 //
-//  main.cpp � CLI front-end for CUDA pHash library
+//  CLI front-end for CUDA pHash library
 //
 
 #include "argparse.hpp"
@@ -55,6 +55,26 @@ static void showCursor() {
     std::cout << "\033[?25h" << std::flush;  // ANSI escape code to show cursor
 }
 #endif
+
+indicators::ProgressBar bar(std::string_view prefix, bool show_elapsed = false, bool show_remaining = false) {
+    return indicators::ProgressBar{
+        indicators::option::BarWidth{30},
+        indicators::option::PrefixText{std::string(prefix)},
+        indicators::option::Start{"["},
+        indicators::option::Fill{"="},
+        indicators::option::Lead{">"},
+        indicators::option::Remainder{" "},
+        indicators::option::End{"]"},
+        indicators::option::ShowPercentage{true},
+        indicators::option::ShowElapsedTime{show_elapsed},
+        indicators::option::ShowRemainingTime{show_remaining},
+        indicators::option::Stream{std::cout}
+    };
+};
+
+std::string withCommas(auto number) {
+    return std::format(std::locale("en_US.UTF-8"), "{:L}", number);
+}
 
 static std::string toLower(std::string s)
 {
@@ -139,27 +159,7 @@ static std::string formatFileSize(std::uintmax_t bytes)
     return oss.str();
 }
 
-static std::string pHashToHex(const pHash& hash, int hashSize)
-{
-    std::ostringstream oss;
-    oss << std::hex << std::setfill('0');
-
-    int totalBits = hashSize * hashSize;
-    if (totalBits <= 64) {
-        // Only output the relevant hex digits
-        int hexDigits = (totalBits + 3) / 4;  // Round up to nearest hex digit
-        oss << std::setw(hexDigits) << (hash.words[0] >> (64 - totalBits));
-    }
-    else {
-        // Use both words
-        oss << std::setw(16) << hash.words[0];
-        int remainingBits = totalBits - 64;
-        int hexDigits = (remainingBits + 3) / 4;
-        oss << std::setw(hexDigits) << (hash.words[1] >> (64 - remainingBits));
-    }
-
-    return oss.str();
-}
+// pHashToHex function removed - now using pHash::to_string() method
 
 static void saveHashesCSV(const std::string& path, const std::vector<std::string>& files,
     const std::vector<pHash>& hashes, int hashSize)
@@ -172,10 +172,8 @@ static void saveHashesCSV(const std::string& path, const std::vector<std::string
 
     csv << "filepath,phash_hex\n";
     for (size_t i = 0; i < files.size() && i < hashes.size(); ++i) {
-        csv << '"' << files[i] << "\"," << pHashToHex(hashes[i], hashSize) << '\n';
+        csv << '"' << files[i] << "\"," << hashes[i].to_string(hashSize) << '\n';
     }
-
-    std::cout << "Hashes saved to " << path << '\n';
 }
 
 static void saveSimilarImagesCSV(const std::string& path, const std::vector<Image>& similar, int threshold)
@@ -217,11 +215,11 @@ static void printConfiguration(std::string folder, int numImages, int hashSize, 
     };
 
     std::cout << style::italic << centerText(folder) << style::reset << std::endl;
-    std::cout << style::italic << centerText(std::to_string(numImages) + " images") << style::reset << std::endl;
+    std::cout << style::italic << centerText(withCommas(numImages) + " images") << style::reset << std::endl;
 
     std::string hashSizeStr = std::to_string(hashSize) + "x" + std::to_string(hashSize) + " (" + std::to_string(hashSize * hashSize) + " bits)";
     std::string imgSizeStr = std::to_string(hashSize * freqFactor) + "x" + std::to_string(hashSize * freqFactor) + " pixels";
-    std::string batchSizeStr = std::to_string(batchSize);
+    std::string batchSizeStr = withCommas(batchSize);
     std::string threadsStr = (threads == -1 ? "auto" : std::to_string(threads));
 
     Table::Row_t headerRow = { "Hash Size", "Img Size", "GPU Batch", "CPU Threads" };
@@ -236,12 +234,12 @@ static void printConfiguration(std::string folder, int numImages, int hashSize, 
     configurations.add_row(headerRow);
     configurations.add_row(dataRow);
     configurations.format().width(colWidth).font_align(FontAlign::center);
-    configurations[0].format().font_color(Color::yellow).font_style({ FontStyle::bold });
+    configurations[0].format().font_style({ FontStyle::bold });
 
     std::cout << configurations << std::endl << std::endl;
 }
 
-static void printHashResults(std::vector<std::string> paths, std::vector<pHash> hashes, std::string outputPath)
+static void printHashResults(std::vector<std::string> paths, std::vector<pHash> hashes, std::string outputPath, int hashSize)
 {
     int tableWidth = (4 * 16) + 2;
     int colWidth = tableWidth / 2;
@@ -259,7 +257,7 @@ static void printHashResults(std::vector<std::string> paths, std::vector<pHash> 
     std::vector<Table::Row_t> dataRows;
 
     for (size_t i = 0; i < std::min<size_t>(5, hashes.size()); ++i) {
-		dataRows.push_back({ fs::path(paths[i]).filename().string(), pHashToHex(hashes[i], 8) });
+		dataRows.push_back({ fs::path(paths[i]).filename().string(), hashes[i].to_string(hashSize) });
     }
 
     Table results;
@@ -270,12 +268,12 @@ static void printHashResults(std::vector<std::string> paths, std::vector<pHash> 
 	}
 
     results.format().width(colWidth).font_align(FontAlign::center);
-    results[0].format().font_color(Color::yellow).font_style({ FontStyle::bold });
+    results[0].format().font_style({ FontStyle::bold });
 
     std::cout << results << std::endl;
 
     if (hashes.size() > 5 && outputPath != "") {
-        std::cout << style::italic << fg::green << centerText("All " + std::to_string(hashes.size()) + " hashes saved to " + outputPath) << style::reset << fg::reset << std::endl;
+        std::cout << style::italic << fg::green << centerText(withCommas(hashes.size()) + " hashes saved to " + outputPath) << style::reset << fg::reset << std::endl;
     }
 }
 
@@ -298,21 +296,15 @@ static int handleHashCommand(argparse::ArgumentParser& program)
     // Validate directory
     std::error_code ec;
     if (!fs::exists(directory, ec) || !fs::is_directory(directory, ec)) {
-        std::cerr << "Error: '" << directory.string() << "' is not a valid directory\n";
-        return 1;
-    }
-
-    // Validate hash size
-    if (hashSize < 5 || hashSize > 11) {
-        std::cerr << "Error: Hash size must be between 5 and 11\n";
+        std::cerr << fg::red << "Error: '" << directory.string() << "' is not a valid directory\n" << fg::reset;
         return 1;
     }
 
     // Collect files
     const auto filePaths = collectImagePaths(directory, extensions, recursive);
     if (filePaths.empty()) {
-        std::cout << "No images found.\n";
-        return 0;
+        std::cerr << fg::red << "No images found.\n" << fg::reset;
+        return 1;
     }
 
     // Compute hashes
@@ -323,91 +315,27 @@ static int handleHashCommand(argparse::ArgumentParser& program)
 
         hideCursor();
 
-        indicators::ProgressBar total_bar{
-            indicators::option::BarWidth{30},
-            indicators::option::PrefixText{"Total  "},
-            indicators::option::Start{"["},
-            indicators::option::Fill{"="},
-            indicators::option::Lead{">"},
-            indicators::option::Remainder{" "},
-            indicators::option::End{"]"},
-            indicators::option::ShowPercentage{true},
-            indicators::option::ShowElapsedTime{true},
-            indicators::option::ShowRemainingTime{true},
-            indicators::option::Stream{std::cout}
+        std::array<indicators::ProgressBar, 5> bar_arr = {
+            bar("Total  ", true, true),
+            bar("Read   "),
+            bar("Decode "),
+            bar("Resize "),
+            bar("Hash   ")
         };
-
-        indicators::ProgressBar read_bar{
-            indicators::option::BarWidth{30},
-            indicators::option::PrefixText{"Read   "},
-            indicators::option::Start{"["},
-            indicators::option::Fill{"="},
-            indicators::option::Lead{">"},
-            indicators::option::Remainder{" "},
-            indicators::option::End{"]"},
-            indicators::option::ShowPercentage{true},
-            indicators::option::Stream{std::cout}
-        };
-
-        indicators::ProgressBar decode_bar{
-            indicators::option::BarWidth{30},
-            indicators::option::PrefixText{"Decode "},
-            indicators::option::Start{"["},
-            indicators::option::Fill{"="},
-            indicators::option::Lead{">"},
-            indicators::option::Remainder{" "},
-            indicators::option::End{"]"},
-            indicators::option::ShowPercentage{true},
-            indicators::option::Stream{std::cout}
-        };
-
-        indicators::ProgressBar resize_bar{
-            indicators::option::BarWidth{30},
-            indicators::option::PrefixText{"Resize "},
-            indicators::option::Start{"["},
-            indicators::option::Fill{"="},
-            indicators::option::Lead{">"},
-            indicators::option::Remainder{" "},
-            indicators::option::End{"]"},
-            indicators::option::ShowPercentage{true},
-            indicators::option::Stream{std::cout}
-        };
-
-        indicators::ProgressBar hash_bar{
-            indicators::option::BarWidth{30},
-            indicators::option::PrefixText{"Hash   "},
-            indicators::option::Start{"["},
-            indicators::option::Fill{"="},
-            indicators::option::Lead{">"},
-            indicators::option::Remainder{" "},
-            indicators::option::End{"]"},
-            indicators::option::ShowPercentage{true},
-            indicators::option::Stream{std::cout}
-        };
-
-        indicators::MultiProgress<indicators::ProgressBar, 5> bars(total_bar, read_bar, decode_bar, resize_bar, hash_bar);
+        indicators::MultiProgress<indicators::ProgressBar, 5> bars(bar_arr[0], bar_arr[1], bar_arr[2], bar_arr[3], bar_arr[4]);
 
         // Create progress callback that updates the progress bar
-        auto progressCallback = [&bars, &total_bar](const ProgressInfo& info) {
-            bars.set_progress<0>(static_cast<size_t>(info.percentComplete()));
+        auto progressCallback = [&bars, &bar_arr](const ProgressInfo& info) {
+            bars.set_progress<0>(info.percentComplete());
+            bars.set_progress<1>(info.percentRead());
+            bars.set_progress<2>(info.percentDecoded());
+            bars.set_progress<3>(info.percentResized());
+            bars.set_progress<4>(info.percentHashed());
 
-            // Change Total bar color to yellow if there are failures
             if (info.hasFailures()) {
-                total_bar.set_option(indicators::option::ForegroundColor{indicators::Color::yellow});
-
-                std::string failureText = "(" + std::to_string(info.failedImages) + " failed image(s))";
-                total_bar.set_option(indicators::option::PostfixText{failureText});
+                bar_arr[0].set_option(indicators::option::ForegroundColor{indicators::Color::yellow});
+                bar_arr[0].set_option(indicators::option::PostfixText{ "(" + std::to_string(info.failedImages) + " failed image(s))" });
             }
-
-            float readPercent = (info.totalImages > 0) ? (static_cast<float>(info.readCompleted) / info.totalImages) * 100 : 0;
-            float decodePercent = (info.totalImages > 0) ? (static_cast<float>(info.decodedCompleted) / info.totalImages) * 100 : 0;
-            float resizePercent = (info.totalImages > 0) ? (static_cast<float>(info.resizedCompleted) / info.totalImages) * 100 : 0;
-            float hashPercent = (info.totalImages > 0) ? (static_cast<float>(info.hashedCompleted) / info.totalImages) * 100 : 0;
-
-            bars.set_progress<1>(static_cast<size_t>(readPercent));
-            bars.set_progress<2>(static_cast<size_t>(decodePercent));
-            bars.set_progress<3>(static_cast<size_t>(resizePercent));
-            bars.set_progress<4>(static_cast<size_t>(hashPercent));
         };
 
         CudaPhash phash(hashSize, freqFactor, batchSize, threads, prefetchFactor, logLevel, progressCallback);
@@ -418,12 +346,12 @@ static int handleHashCommand(argparse::ArgumentParser& program)
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-        std::cout << fg::green << "\nCompleted " << filePaths.size() - hashes.size() << " images in " << duration.count() / 1000.0 << " seconds\n" << fg::reset;
+        std::cout << fg::green << "\nCompleted " << withCommas(hashes.size()) << " images in " << duration.count() / 1000.0 << " seconds\n\n" << fg::reset;
 
         // Report failures if any
         size_t failedCount = filePaths.size() - hashes.size();
         if (failedCount > 0) {
-            std::cout << fg::yellow << "Warning: " << failedCount << " image(s) failed to process" << fg::reset << "\n";
+            std::cout << fg::yellow << "Warning: " << withCommas(failedCount) << " image(s) failed to process" << fg::reset << "\n";
         }
 
         // Save to CSV if requested
@@ -432,7 +360,7 @@ static int handleHashCommand(argparse::ArgumentParser& program)
         }
 
         // Display first few hashes as examples
-        printHashResults(filePaths, hashes, outputPath);
+        printHashResults(filePaths, hashes, outputPath, hashSize);
 
     }
     catch (const std::exception& e) {
@@ -469,12 +397,6 @@ static int handleSimilarCommand(argparse::ArgumentParser& program)
     std::error_code ec;
     if (!fs::exists(directory, ec) || !fs::is_directory(directory, ec)) {
         std::cerr << "Error: '" << directory.string() << "' is not a valid directory\n";
-        return 1;
-    }
-
-    // Validate hash size
-    if (hashSize < 5 || hashSize > 11) {
-        std::cerr << "Error: Hash size must be between 5 and 11\n";
         return 1;
     }
 
@@ -650,17 +572,16 @@ static int handleSimilarCommand(argparse::ArgumentParser& program)
 int main(int argc, char* argv[])
 {
     argparse::ArgumentParser program("phash", "1.0");
-    program.add_description("CUDA-accelerated perceptual hash calculator for finding visually similar images");
-    program.add_epilog("Examples:\n"
-        "  phash hash -d ./photos -o hashes.csv\n"
-        "  phash similar -d ./photos -t 3 --interactive");
+    program.add_description("CUDA-accelerated perceptual hash calculator");
+    program.add_epilog("Examples:\n  phash hash -d ./photos -o hashes.csv\n  phash similar -d ./photos -t 3 --interactive\n\n"
+                       "For detailed options: phash <command> --help");
 
     // Add subcommands
     argparse::ArgumentParser hash_command("hash");
-    hash_command.add_description("Compute perceptual hashes for images");
+    hash_command.add_description("Compute the perceptual hashes of images");
 
     argparse::ArgumentParser similar_command("similar");
-    similar_command.add_description("Find visually similar images");
+    similar_command.add_description("Compute hashes and calculate visual similarity");
 
     // Common arguments for both commands
     auto addCommonArgs = [](argparse::ArgumentParser& cmd) {
@@ -708,7 +629,6 @@ int main(int argc, char* argv[])
             .help("Frequency oversampling factor (higher = more accurate but slower)");
         };
 
-    // Add common arguments to both commands
     addCommonArgs(hash_command);
     addCommonArgs(similar_command);
 
@@ -769,6 +689,12 @@ int main(int argc, char* argv[])
         std::cerr << program;
         return 1;
     }
+
+    // Validate arguments
+    /*if (program.get<int>("--hash-size") < 5 || program.get<int>("--hash-size") > 11) {
+        std::cerr << fg::red << "Error: Hash size must be between 5 and 11\n" << fg::reset;
+        return 1;
+    }*/
 
     // Handle subcommands
     if (program.is_subcommand_used("hash")) {

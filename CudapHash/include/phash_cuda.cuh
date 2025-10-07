@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <memory>
 #include <functional>
+#include <sstream>
+#include <iomanip>
 #include <nvjpeg.h>
 #include <cublas_v2.h>
 #include "progress_tracker.hpp"
@@ -21,6 +23,26 @@ struct GpuData {
 
 struct alignas(16) pHash {
     uint64_t words[2] = { 0, 0 };
+
+    /**
+     * @brief Converts the pHash to a hexadecimal string
+     * @param hashSize The dimensions of the hash (e.g., 8 for 8x8 = 64 bits)
+     * @return Hexadecimal string representation of the hash
+     */
+    std::string to_string(int hashSize) const {
+        int totalBits = hashSize * hashSize;
+        int hexDigits = (totalBits + 3) / 4;
+
+        if (totalBits <= 64) {
+            return std::format("{:0{}x}", words[0] >> (64 - totalBits), hexDigits);
+        }
+        else {
+            return std::format("{:016x}{:0{}x}",
+                words[0],
+                words[1] >> (128 - totalBits),
+                hexDigits - 16);
+        }
+    };
 };
 
 struct Image {

@@ -36,10 +36,25 @@ struct ProgressInfo {
         return progress;
     }
 
-    // Get percentage as integer (0 to 100)
-    int percentComplete() const {
-        return static_cast<int>(overallProgress() * 100);
+    size_t percentComplete() const {
+        return static_cast<size_t>(overallProgress() * 100);
     }
+
+    size_t percentRead() const {
+        return (totalImages == 0) ? 0 : static_cast<size_t>((static_cast<float>(readCompleted) / totalImages) * 100);
+    }
+
+    size_t percentDecoded() const {
+        return (totalImages == 0) ? 0 : static_cast<size_t>((static_cast<float>(decodedCompleted) / totalImages) * 100);
+	}
+
+    size_t percentResized() const {
+		return (totalImages == 0) ? 0 : static_cast<size_t>((static_cast<float>(resizedCompleted) / totalImages) * 100);
+	}
+
+    size_t percentHashed() const {
+		return (totalImages == 0) ? 0 : static_cast<size_t>((static_cast<float>(hashedCompleted) / totalImages) * 100);
+	}
 
     // Check if any failures occurred
     bool hasFailures() const {
