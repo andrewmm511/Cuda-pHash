@@ -2,7 +2,9 @@
 
 CUDA pHash is a high-performance, GPU-accelerated tool for computing the perceptual hash (pHash) of images. 
 
-CUDA pHash outperforms other leading perceptual hash implementations by a wide margin, processing massive datasets via highly-optimized compute pipelines.
+CUDA pHash outperforms all other leading perceptual hash implementations by a wide margin because of it's highly-optimized compute pipelines.
+
+This repo contains both a packaged CLI application for running CUDA pHash, and libraries for programmatic usage.
 
 ## Performance Benchmark 🚀
 
@@ -14,7 +16,17 @@ CUDA pHash outperforms other leading perceptual hash implementations by a wide m
 
 > **\*** pHash calculation on **COCO 2017** (163,957 images) using **13th Gen Intel i9 13900K** and **NVIDIA RTX 3080** over PCIe.
 
-## Quick Start
+## Capabilities
+
+CUDA pHash supports two modes:
+1. **Hash**: Computes the perceptual hashes of a list of images.
+2. **Similar**: Hashes and then calculates perceptually similar images below a given similarity threshold.
+
+## CLI Application Usage
+
+TODO
+
+## Library Usage
 
 Below is a simple example demonstrating how to instantiate a CUDA pHash object, compute hashes, and compare them using Hamming distance:
 
