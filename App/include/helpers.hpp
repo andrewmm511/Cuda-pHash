@@ -33,7 +33,7 @@ std::unordered_set<std::string> parseExtensions(const std::string& csv);
 
 // File collection
 std::vector<std::string> collectImagePaths(const std::filesystem::path& dir,
-                                            const std::unordered_set<std::string>& allowed,
+                                            const std::string& allowed,
                                             bool recursive);
 
 // User interaction

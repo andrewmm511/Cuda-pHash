@@ -14,6 +14,9 @@
 #include <sstream>
 #include <format>
 #include <locale>
+#include <ranges>
+#include <string_view>
+#include <stdexcept>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -95,11 +98,28 @@ std::unordered_set<std::string> parseExtensions(const std::string& csv)
 }
 
 std::vector<std::string> collectImagePaths(const fs::path& dir,
-    const std::unordered_set<std::string>& allowed,
+    const std::string& allowed,
     bool recursive)
 {
+    std::error_code ec;
+    if (!fs::exists(dir, ec) || !fs::is_directory(dir, ec)) {
+        throw std::runtime_error("Error: '" + dir.string() + "' is not a valid directory");
+    }
+
     std::vector<std::string> files;
     const auto opts = fs::directory_options::skip_permission_denied;
+
+    std::unordered_set<std::string> extensions;
+
+    for (auto word : allowed | std::views::split(',') | std::views::transform([](auto&& r) {
+        return std::string_view(&*r.begin(), std::ranges::distance(r));
+    }))
+    {
+        std::string ext(word);
+        ext.erase(0, ext.find_first_not_of(" \t"));
+        ext.erase(ext.find_last_not_of(" \t") + 1);
+        if (!ext.empty()) extensions.insert(ext);
+    }
 
     try {
         if (recursive) {
@@ -107,7 +127,7 @@ std::vector<std::string> collectImagePaths(const fs::path& dir,
                 if (!entry.is_regular_file()) continue;
                 std::string ext = toLower(entry.path().extension().string());
                 if (!ext.empty() && ext.front() == '.') ext.erase(0, 1);
-                if (allowed.empty() || allowed.contains(ext))
+                if (extensions.empty() || extensions.contains(ext))
                     files.emplace_back(entry.path().string());
             }
         }
@@ -116,16 +136,21 @@ std::vector<std::string> collectImagePaths(const fs::path& dir,
                 if (!entry.is_regular_file()) continue;
                 std::string ext = toLower(entry.path().extension().string());
                 if (!ext.empty() && ext.front() == '.') ext.erase(0, 1);
-                if (allowed.empty() || allowed.contains(ext))
+                if (extensions.empty() || extensions.contains(ext))
                     files.emplace_back(entry.path().string());
             }
         }
     }
     catch (const fs::filesystem_error& e) {
-        std::cerr << "Error scanning directory: " << e.what() << '\n';
+        throw std::runtime_error(std::string("Error scanning directory: ") + e.what());
     }
 
     std::sort(files.begin(), files.end());
+
+    if (files.empty()) {
+        throw std::runtime_error("No images found in directory '" + dir.string() + "'");
+	}
+
     return files;
 }
 

@@ -157,10 +157,7 @@ void CudaPhash::reader(WorkQueue& inQueue, WorkQueue& outQueue, int threadId) {
         if (!file.is_open()) {
             WARN(id, "Could not open file: ", img->path);
 
-            // Update failure count
-            if (m_progressTracker) {
-                m_progressTracker->updateFailed(1);
-            }
+            if (m_progressTracker) m_progressTracker->updateFailed(1);
             continue;
         }
 
@@ -169,10 +166,7 @@ void CudaPhash::reader(WorkQueue& inQueue, WorkQueue& outQueue, int threadId) {
             DEBUG(id, "Empty or invalid file: ", img->path);
             file.close();
 
-            // Update failure count
-            if (m_progressTracker) {
-                m_progressTracker->updateFailed(1);
-            }
+            if (m_progressTracker) m_progressTracker->updateFailed(1);
             continue;
         }
         img->fileSize = static_cast<size_t>(fileSize);
@@ -191,10 +185,7 @@ void CudaPhash::reader(WorkQueue& inQueue, WorkQueue& outQueue, int threadId) {
             m_memMgr->Free<unsigned char>(MemoryManager::PINNED_POOL, pinnedMem);
             img->rawFileData = nullptr;
 
-            // Update failure count
-            if (m_progressTracker) {
-                m_progressTracker->updateFailed(1);
-            }
+            if (m_progressTracker) m_progressTracker->updateFailed(1);
             continue;
         }
 
@@ -203,10 +194,7 @@ void CudaPhash::reader(WorkQueue& inQueue, WorkQueue& outQueue, int threadId) {
 
         outQueue.push(img);
 
-        // Update progress tracker
-        if (m_progressTracker) {
-            m_progressTracker->updateRead(1);
-        }
+        if (m_progressTracker) m_progressTracker->update(PipelineStage::Read, 1);
     }
 }
 
@@ -280,10 +268,7 @@ void CudaPhash::decoder(WorkQueue& inQueue, WorkQueue& outQueue) {
                     m_memMgr->Free(MemoryManager::DEVICE_POOL, img->gpuData.decodedPtr);
                     img->gpuData.decodedPtr = nullptr;
 
-                    // Update failure count
-                    if (m_progressTracker) {
-                        m_progressTracker->updateFailed(1);
-                    }
+                    if (m_progressTracker) m_progressTracker->updateFailed(1);
                 }
                 else {
                     DEBUG(__func__, "SUCCESSFUL -- ", img->path);
@@ -297,10 +282,7 @@ void CudaPhash::decoder(WorkQueue& inQueue, WorkQueue& outQueue) {
 
             if (!successfulImages.empty()) {
                 outQueue.pushMany(successfulImages);
-                // Update progress tracker for successful decodes
-                if (m_progressTracker) {
-                    m_progressTracker->updateDecoded(successfulImages.size());
-                }
+                if (m_progressTracker) m_progressTracker->update(PipelineStage::Decode, successfulImages.size());
             }
 
         }
@@ -308,10 +290,7 @@ void CudaPhash::decoder(WorkQueue& inQueue, WorkQueue& outQueue) {
             INFO(__func__, "Decoded ", imgs.size(), " images.");
             outQueue.pushMany(imgs);
 
-            // Update progress tracker
-            if (m_progressTracker) {
-                m_progressTracker->updateDecoded(imgs.size());
-            }
+            if (m_progressTracker) m_progressTracker->update(PipelineStage::Decode, imgs.size());
         }
 
         for (auto& img : imgs) {
@@ -358,10 +337,7 @@ void CudaPhash::resizer(WorkQueue& inQueue, WorkQueue& outQueue) {
 
         outQueue.pushMany(imgs);
 
-        // Update progress tracker
-        if (m_progressTracker) {
-            m_progressTracker->updateResized(imgs.size());
-        }
+        if (m_progressTracker) m_progressTracker->update(PipelineStage::Resize, imgs.size());
 
         INFO(id, "Resized ", imgs.size(), " images.");
     }
@@ -433,10 +409,7 @@ void CudaPhash::hasher(WorkQueue& inQueue) {
 
         idx += imgs.size();
 
-        // Update progress tracker
-        if (m_progressTracker) {
-            m_progressTracker->updateHashed(imgs.size());
-        }
+        if (m_progressTracker) m_progressTracker->update(PipelineStage::Hash, imgs.size());
 
         INFO(__func__, "Hashed ", imgs.size(), " images.");
     }
@@ -492,10 +465,7 @@ std::vector<Image> CudaPhash::runPipeline(const std::vector<std::string>& imageP
     auto end = std::ranges::remove_if(imgs, [](const Image& img) { return img.hashOffset == static_cast<size_t>(-1); }).begin();
     imgs.erase(end, imgs.end());
 
-    // Force final progress update
-    if (m_progressTracker) {
-        m_progressTracker->forceUpdate();
-    }
+    if (m_progressTracker) m_progressTracker->forceUpdate();
 
     return imgs;
 }
