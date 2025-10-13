@@ -146,10 +146,15 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\helpers.cpp" />
     <ClCompile Include="src\save_results.cpp" />
+	<ClCompile Include="src\hash_command.cpp" />
+	<ClCompile Include="src\similar_command.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\helpers.hpp" />
     <ClInclude Include="include\save_results.hpp" />
+	<ClInclude Include="include\hash_command.hpp" />
+	<ClInclude Include="include\similar_command.hpp" />
+	<ClInclude Include="include\arguments.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CudapHash\CudapHash.vcxproj">
