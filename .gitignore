@@ -73,3 +73,7 @@ ipch/
 vcpkg.applocal.log
 .claude
 CLAUDE.md
+AGENTS.md
+nul
+/AGENTS.md
+/CLAUDE.md
