@@ -5,6 +5,8 @@
 // validate 500 ms OOM path and the blocking/wake-up logic,
 // and ensure nvJPEG callback wrappers behave.
 
+#include "pch.h"
+
 #include <gtest/gtest.h>
 
 #include "memory_manager.cuh"
