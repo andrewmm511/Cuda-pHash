@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 namespace phash_app {
 
@@ -17,7 +18,6 @@ namespace defaults {
     constexpr int FREQ_FACTOR = 4;
     constexpr bool RECURSIVE = false;
 
-    // Similar-specific defaults
     constexpr int THRESHOLD = 5;
     constexpr int NUM_TABLES = 32;
     constexpr int BITS_PER_TABLE = 8;
@@ -27,26 +27,52 @@ namespace defaults {
     constexpr bool DRY_RUN = false;
 }
 
-struct Arguments {
+struct RawArguments {
     std::filesystem::path directory;
-    bool recursive;
-    std::string extensions;
-    int hashSize;
-    int freqFactor;
-    int batchSize;
-    int threads;
-    int prefetchFactor;
-    int logLevel;
-    std::string outputPath;
+    bool recursive = defaults::RECURSIVE;
+    std::string extensions = defaults::DEFAULT_EXTENSIONS;
+    int hashSize = defaults::HASH_SIZE;
+    int freqFactor = defaults::FREQ_FACTOR;
+    int batchSize = defaults::BATCH_SIZE;
+    int threads = defaults::THREADS;
+    int prefetchFactor = defaults::PREFETCH_FACTOR;
+    int logLevel = defaults::LOG_LEVEL;
+    std::string outputPath = defaults::DEFAULT_OUTPUT;
 
-    // Similar-specific arguments
-    int threshold;
-    int numTables;
-    int bitsPerTable;
-    bool autoDelete;
-    bool interactive;
-    bool printOnly;
-    bool dryRun;
+    int threshold = defaults::THRESHOLD;
+    int numTables = defaults::NUM_TABLES;
+    int bitsPerTable = defaults::BITS_PER_TABLE;
+    bool autoDelete = defaults::AUTO_DELETE;
+    bool interactive = defaults::INTERACTIVE;
+    bool printOnly = defaults::PRINT_ONLY;
+    bool dryRun = defaults::DRY_RUN;
+};
+
+class Arguments {
+public:
+    enum class Command { Hash, Similar };
+
+    Arguments(const RawArguments& raw, Command command);
+
+    const std::filesystem::path directory;
+    const bool recursive;
+    const std::vector<std::string> extensions;
+    const int hashSize;
+    const int freqFactor;
+    const int batchSize;
+    const int threads;
+    const int prefetchFactor;
+    const int logLevel;
+    const std::string outputPath;
+
+    const int threshold;
+    const int numTables;
+    const int bitsPerTable;
+    const bool autoDelete;
+    const bool interactive;
+    const bool printOnly;
+    const bool dryRun;
+
 };
 
 } // namespace phash_app

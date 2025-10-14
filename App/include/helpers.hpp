@@ -8,7 +8,6 @@
 #include <filesystem>
 #include <string>
 #include <string_view>
-#include <unordered_set>
 #include <vector>
 #include "indicators.hpp"
 #include "phash_cuda.cuh"
@@ -28,12 +27,9 @@ std::string withCommas(auto number);
 // String manipulation
 std::string toLower(std::string s);
 
-// File extension parsing
-std::unordered_set<std::string> parseExtensions(const std::string& csv);
-
 // File collection
 std::vector<std::string> collectImagePaths(const std::filesystem::path& dir,
-                                            const std::string& allowed,
+                                            const std::vector<std::string>& allowedExtensions,
                                             bool recursive);
 
 // User interaction

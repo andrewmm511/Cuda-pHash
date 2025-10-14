@@ -16,12 +16,6 @@ using namespace phash_app;
 
 int phash_app::handleSimilarCommand(const Arguments& args)
 {
-    // Check conflicting options
-    if (args.autoDelete && args.interactive) {
-        std::cerr << "Error: Cannot use both --auto-delete and --interactive\n";
-        return 1;
-    }
-
     // Collect files
     std::cout << "Searching for images in " << args.directory.string();
     if (args.recursive) std::cout << " (recursive)";

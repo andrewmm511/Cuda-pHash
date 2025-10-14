@@ -14,9 +14,9 @@
 #include <sstream>
 #include <format>
 #include <locale>
-#include <ranges>
 #include <string_view>
 #include <stdexcept>
+#include <unordered_set>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -81,24 +81,8 @@ std::string toLower(std::string s)
     return s;
 }
 
-std::unordered_set<std::string> parseExtensions(const std::string& csv)
-{
-    std::unordered_set<std::string> exts;
-    size_t start = 0;
-    while (start < csv.size()) {
-        size_t pos = csv.find_first_of(",;", start);
-        std::string token = csv.substr(start, pos == std::string::npos ? csv.npos : pos - start);
-        token = toLower(token);
-        if (!token.empty() && token.front() == '.') token.erase(0, 1);
-        if (!token.empty()) exts.insert(token);
-        if (pos == std::string::npos) break;
-        start = pos + 1;
-    }
-    return exts;
-}
-
 std::vector<std::string> collectImagePaths(const fs::path& dir,
-    const std::string& allowed,
+    const std::vector<std::string>& allowedExtensions,
     bool recursive)
 {
     std::error_code ec;
@@ -109,17 +93,8 @@ std::vector<std::string> collectImagePaths(const fs::path& dir,
     std::vector<std::string> files;
     const auto opts = fs::directory_options::skip_permission_denied;
 
-    std::unordered_set<std::string> extensions;
-
-    for (auto word : allowed | std::views::split(',') | std::views::transform([](auto&& r) {
-        return std::string_view(&*r.begin(), std::ranges::distance(r));
-    }))
-    {
-        std::string ext(word);
-        ext.erase(0, ext.find_first_not_of(" \t"));
-        ext.erase(ext.find_last_not_of(" \t") + 1);
-        if (!ext.empty()) extensions.insert(ext);
-    }
+    std::unordered_set<std::string> extensions(allowedExtensions.begin(), allowedExtensions.end());
+    const bool filterActive = !extensions.empty();
 
     try {
         if (recursive) {
@@ -127,7 +102,7 @@ std::vector<std::string> collectImagePaths(const fs::path& dir,
                 if (!entry.is_regular_file()) continue;
                 std::string ext = toLower(entry.path().extension().string());
                 if (!ext.empty() && ext.front() == '.') ext.erase(0, 1);
-                if (extensions.empty() || extensions.contains(ext))
+                if (!filterActive || extensions.contains(ext))
                     files.emplace_back(entry.path().string());
             }
         }
@@ -136,7 +111,7 @@ std::vector<std::string> collectImagePaths(const fs::path& dir,
                 if (!entry.is_regular_file()) continue;
                 std::string ext = toLower(entry.path().extension().string());
                 if (!ext.empty() && ext.front() == '.') ext.erase(0, 1);
-                if (extensions.empty() || extensions.contains(ext))
+                if (!filterActive || extensions.contains(ext))
                     files.emplace_back(entry.path().string());
             }
         }
