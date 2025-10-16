@@ -181,6 +181,7 @@
     <ClCompile Include="src\Integration.cpp" />
     <ClCompile Include="src\Unit.cpp" />
     <ClCompile Include="unit\App\arguments_test.cpp" />
+	<ClCompile Include="unit\App\helpers_test.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>

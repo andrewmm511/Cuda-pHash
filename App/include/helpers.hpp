@@ -14,6 +14,14 @@
 
 namespace phash_app {
 
+#ifdef _WIN32
+    inline void hideCursor() { CONSOLE_CURSOR_INFO info{ .dwSize = 100, .bVisible = FALSE }; SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info); }
+    inline void showCursor() { CONSOLE_CURSOR_INFO info{ .dwSize = 100, .bVisible = TRUE }; SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info); }
+#else
+    inline void hideCursor() { std::cout << "\033[?25l" << std::flush; }
+    inline void showCursor() { std::cout << "\033[?25h" << std::flush; }
+#endif
+
 // Cursor visibility control
 void hideCursor();
 void showCursor();

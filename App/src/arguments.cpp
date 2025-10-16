@@ -15,50 +15,23 @@ namespace fs = std::filesystem;
 
 namespace {
 
-std::string trimCopy(std::string_view value)
-{
-    const auto start = value.find_first_not_of(" \t\r\n");
-    if (start == std::string_view::npos) return {};
-
-    const auto end = value.find_last_not_of(" \t\r\n");
-    return std::string(value.substr(start, end - start + 1));
-}
-
-std::string toLowerCopy(std::string value)
-{
-    std::ranges::transform(value,
-                           value.begin(),
-                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return value;
-}
-
-std::vector<std::string> parseExtensionList(const std::string& exts)
+std::vector<std::string> parseExtensionList(std::string_view exts)
 {
     std::vector<std::string> extensions;
     std::unordered_set<std::string> seen;
 
-    if (exts.empty()) return extensions;
+    for (auto word : exts | std::views::split(',')) {
+        std::string ext;
 
-    std::string_view sv = exts;
-    size_t start = 0;
-
-    while (start < sv.size()) {
-        const auto pos = sv.find_first_of(",;", start);
-        const auto token = sv.substr(start, pos == std::string_view::npos ? sv.size() - start : pos - start);
-        auto cleaned = trimCopy(token);
-
-        if (!cleaned.empty() && cleaned.front() == '.') {
-            cleaned.erase(0, 1);
+        for (char c : word) {
+            if (!std::isspace(c) && c != '.') {
+                ext += std::tolower(c);
+            }
         }
 
-        cleaned = toLowerCopy(std::move(cleaned));
-        if (!cleaned.empty() && seen.insert(cleaned).second) {
-            extensions.emplace_back(std::move(cleaned));
+        if (!ext.empty() && seen.insert(ext).second) {
+            extensions.push_back(std::move(ext));
         }
-
-        if (pos == std::string_view::npos) break;
-        
-        start = pos + 1;
     }
 
     return extensions;
@@ -68,7 +41,7 @@ template<std::integral T>
 T validateInRange(std::string_view flag, T value, T min, T max)
 {
     if (value < min || value > max) {
-        throw std::invalid_argument(std::format("{} must be between {} and {}).", flag, min, max, value));
+        throw std::invalid_argument(std::format("{} must be between {} and {}.", flag, min, max));
     }
     return value;
 }

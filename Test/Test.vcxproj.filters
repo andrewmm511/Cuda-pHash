@@ -42,5 +42,8 @@
     <ClCompile Include="..\App\src\arguments.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="unit\App\helpers_test.cpp">
+      <Filter>Unit\App</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

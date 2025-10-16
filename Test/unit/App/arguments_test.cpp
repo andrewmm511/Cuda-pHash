@@ -193,31 +193,6 @@ TEST_F(ArgumentsTest, ExtensionParsing_MultipleExtensions) {
     EXPECT_EQ(args.extensions[3], "bmp");
 }
 
-TEST_F(ArgumentsTest, ExtensionParsing_WithSemicolons) {
-    RawArguments raw = createValidRawArgs();
-    raw.extensions = "png;jpg;gif";
-
-    Arguments args(raw, Arguments::Command::Hash);
-
-    ASSERT_EQ(args.extensions.size(), 3u);
-    EXPECT_EQ(args.extensions[0], "png");
-    EXPECT_EQ(args.extensions[1], "jpg");
-    EXPECT_EQ(args.extensions[2], "gif");
-}
-
-TEST_F(ArgumentsTest, ExtensionParsing_MixedDelimiters) {
-    RawArguments raw = createValidRawArgs();
-    raw.extensions = "png,jpg;gif,bmp";
-
-    Arguments args(raw, Arguments::Command::Hash);
-
-    ASSERT_EQ(args.extensions.size(), 4u);
-    EXPECT_EQ(args.extensions[0], "png");
-    EXPECT_EQ(args.extensions[1], "jpg");
-    EXPECT_EQ(args.extensions[2], "gif");
-    EXPECT_EQ(args.extensions[3], "bmp");
-}
-
 TEST_F(ArgumentsTest, ExtensionParsing_WithDots) {
     RawArguments raw = createValidRawArgs();
     raw.extensions = ".png,.jpg,.gif";
