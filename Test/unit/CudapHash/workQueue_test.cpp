@@ -2,8 +2,6 @@
 // These tests exercise blocking semantics, sentinel behavior, capacity bounds,
 // and basic concurrency for the WorkQueue without depending on the full Image definition.
 
-#include "pch.h"
-
 #include <gtest/gtest.h>
 
 #include <atomic>
@@ -13,6 +11,8 @@
 #include <vector>
 
 #include "work_queue.hpp"
+
+namespace CudapHash {
 
 using namespace std::chrono_literals;
 
@@ -224,3 +224,4 @@ TEST(WorkQueueTests, MultiProducerMultiConsumerWithSentinel) {
     EXPECT_TRUE(q.empty());
 }
 
+} // CudapHash namespace

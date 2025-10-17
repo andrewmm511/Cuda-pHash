@@ -19,12 +19,12 @@
     <Filter Include="Unit\App">
       <UniqueIdentifier>{60b37514-1309-4b15-a7f9-effe6fb6a417}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Unit\CudapHash">
+      <UniqueIdentifier>{775012d3-f288-403c-9038-7cf1c15222c7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Integration.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Unit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="unit\App\arguments_test.cpp">
@@ -33,17 +33,37 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\third_party\googletest\googletest\src\gtest-all.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\third_party\googletest\googlemock\src\gmock-all.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\App\src\arguments.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="unit\App\helpers_test.cpp">
       <Filter>Unit\App</Filter>
     </ClCompile>
+    <ClCompile Include="..\App\src\helpers.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\googletest\googletest\src\gtest-all.cc">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\googletest\googlemock\src\gmock-all.cc">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\App\src\arguments.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\CudapHash\memoryManager_test.cpp">
+      <Filter>Unit\CudapHash</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\CudapHash\workQueue_test.cpp">
+      <Filter>Unit\CudapHash</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\CudapHash\kernels_test.cpp">
+      <Filter>Unit\CudapHash</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\CudapHash\kernels_test_wrapper.h">
+      <Filter>Unit\CudapHash</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="unit\CudapHash\kernels_test_wrapper.cu">
+      <Filter>Unit\CudapHash</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

@@ -9,6 +9,9 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <format>
+#include <locale>
+#include <concepts>
 #include "indicators.hpp"
 #include "phash_cuda.cuh"
 
@@ -30,7 +33,10 @@ void showCursor();
 indicators::ProgressBar bar(std::string_view prefix, bool show_elapsed = false, bool show_remaining = false);
 
 // Number formatting
-std::string withCommas(auto number);
+inline std::string withCommas(std::integral auto number) {
+    static const auto loc = std::locale("");
+    return std::format(loc, "{:L}", number);
+}
 
 // String manipulation
 std::string toLower(std::string s);

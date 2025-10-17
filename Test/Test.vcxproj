@@ -109,7 +109,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)third_party\googletest\googletest;$(SolutionDir)third_party\googletest\googletest\include;$(SolutionDir)third_party\googletest\googlemock;$(SolutionDir)third_party\googletest\googlemock\include;$(SolutionDir)CudapHash\include;$(SolutionDir)CudapHash\src;$(SolutionDir)App\include;$(SolutionDir)App\src;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(ProjectDir)include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)third_party\googletest\googletest;$(SolutionDir)third_party\googletest\googletest\include;$(SolutionDir)third_party\googletest\googlemock;$(SolutionDir)third_party\googletest\googlemock\include;$(SolutionDir)CudapHash\include;$(SolutionDir)CudapHash\src;$(SolutionDir)App\include;$(SolutionDir)App\src;$(SolutionDir)third_party;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(ProjectDir)include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GTEST_LANG_CXX11=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <UseFullPaths>true</UseFullPaths>
       <PrecompiledHeaderFile>
@@ -124,6 +124,10 @@
       <AdditionalLibraryDirectories>$(SolutionDir)build\lib\$(Configuration)\$(Platform)\;$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opencv_world4110.lib;opencv_img_hash4110.lib;nvjpeg.lib;cublas.lib;%(AdditionalDependencies);cudart.lib;cudadevrt.lib</AdditionalDependencies>
     </Link>
+    <CudaCompile>
+      <CodeGeneration>compute_86,sm_86</CodeGeneration>
+      <CudaRuntime>Shared</CudaRuntime>
+    </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -171,18 +175,36 @@
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>nvjpeg.lib;cublas.lib;cuda.lib;cudart.lib;cudart_static.lib;kernel32.lib;</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)build\lib\$(Configuration)\$(Platform)\;$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <CudaCompile>
+      <CudaRuntime>Shared</CudaRuntime>
+      <CodeGeneration>compute_86,sm_86</CodeGeneration>
+      <GPUDebugInfo>true</GPUDebugInfo>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Include>$(ProjectDir)include;$(ProjectDir)src</Include>
+      <AdditionalOptions>-std=c++20 -Xcompiler "/std:c++20" %(AdditionalOptions)</AdditionalOptions>
+      <CompileOut>$(IntDir)%(Filename)%(Extension).obj</CompileOut>
+      <CudaIntDir>$(IntDir)</CudaIntDir>
+    </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\App\src\arguments.cpp" />
+    <ClCompile Include="..\App\src\helpers.cpp" />
     <ClCompile Include="..\third_party\googletest\googlemock\src\gmock-all.cc" />
     <ClCompile Include="..\third_party\googletest\googletest\src\gtest-all.cc" />
     <ClCompile Include="src\Integration.cpp" />
-    <ClCompile Include="src\Unit.cpp" />
     <ClCompile Include="unit\App\arguments_test.cpp" />
-	<ClCompile Include="unit\App\helpers_test.cpp" />
+    <ClCompile Include="unit\App\helpers_test.cpp" />
+    <ClCompile Include="unit\CudapHash\memoryManager_test.cpp" />
+    <ClCompile Include="unit\CudapHash\workQueue_test.cpp" />
+	<ClCompile Include="unit\CudapHash\kernels_test.cpp" />
+	<ClCompile Include="unit\CudapHash\kernels_test_wrapper.h" />
     <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="unit\CudapHash\kernels_test_wrapper.cu" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\App\App.vcxproj">

@@ -64,11 +64,6 @@ indicators::ProgressBar bar(std::string_view prefix, bool show_elapsed, bool sho
     };
 }
 
-std::string withCommas(std::integral auto number) {
-    static const auto loc = std::locale("");
-    return std::format(loc, "{:L}", number);
-}
-
 std::string toLower(std::string s) {
     for (char& c : s) c = std::tolower(static_cast<unsigned char>(c));
     return s;
@@ -78,7 +73,10 @@ std::vector<std::string> collectImagePaths(const fs::path& dir,
     const std::vector<std::string>& allowedExtensions,
     bool recursive)
 {
-    const std::unordered_set<std::string> exts(allowedExtensions.begin(), allowedExtensions.end());
+    std::unordered_set<std::string> exts;
+    for (const auto& ext : allowedExtensions) {
+        exts.insert(ext.starts_with('.') ? ext.substr(1) : ext);
+    }
 
     auto normalizeExt = [](const fs::path& p) {
         std::string ext = toLower(p.extension().string());
@@ -119,7 +117,15 @@ bool queryYesNo(const std::string& prompt)
 {
     std::cout << prompt << " [y/N] " << std::flush;
     std::string line;
-    if (!std::getline(std::cin, line) || line.empty()) return false;
+    if (!std::getline(std::cin, line)) return false;
+
+    size_t start = line.find_first_not_of(" \t\n\r");
+    if (start == std::string::npos) return false;
+
+    size_t end = line.find_last_not_of(" \t\n\r");
+    line = line.substr(start, end - start + 1);
+
+    if (line.empty()) return false;
     char c = std::tolower(static_cast<unsigned char>(line[0]));
     return c == 'y' || line[0] == '1';
 }
@@ -176,8 +182,11 @@ void printHashResults(std::vector<std::string> paths, std::vector<pHash> hashes,
     Table results;
     results.add_row({ "File", "Hash (Hex)" });
 
-    for (size_t i : std::views::iota(0u, std::min<size_t>(5, hashes.size()))) {
-        results.add_row({ fs::path(paths[i]).filename().string(), hashes[i].to_string(hashSize) });
+    // Ensure we don't access beyond the minimum of both vectors' sizes
+    size_t maxResults = std::min({size_t(5), paths.size(), hashes.size()});
+    for (size_t i = 0; i < maxResults; ++i) {
+        std::string filename = paths[i].empty() ? "<unnamed>" : fs::path(paths[i]).filename().string();
+        results.add_row({ filename, hashes[i].to_string(hashSize) });
     }
 
     results.format().width(colWidth).font_align(FontAlign::center);
