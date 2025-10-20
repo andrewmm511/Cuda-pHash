@@ -1,196 +1,219 @@
-cmake_minimum_required(VERSION 3.18)
-project(CudaPHash LANGUAGES CXX CUDA)
+cmake_minimum_required(VERSION 3.24)
+project(CudaPHash VERSION 1.0.0 LANGUAGES CXX CUDA)
 
-# Set C++ and CUDA standards
+cmake_policy(SET CMP0135 NEW)
+cmake_policy(SET CMP0077 NEW)
+
+# Set default build type if not specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 20)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-# Find CUDA
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(CUDAPHASH_CUDA_ARCHITECTURES "75;86;89;90" CACHE STRING "CUDA architectures to build for")
+set(CMAKE_CUDA_ARCHITECTURES ${CUDAPHASH_CUDA_ARCHITECTURES})
+
+option(CUDAPHASH_ENABLE_LTO "Enable Link Time Optimization" ON)
+option(CUDAPHASH_ENABLE_NATIVE_ARCH "Build for native CPU architecture" OFF)
+option(CUDAPHASH_ENABLE_FAST_MATH "Enable fast math optimizations" ON)
+option(CUDAPHASH_ENABLE_PARALLEL_COMPILE "Enable parallel compilation" ON)
+option(CUDA_VERBOSE_PTXAS "Show CUDA PTX assembly statistics for optimization" OFF)
+
+if(CUDAPHASH_ENABLE_LTO)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT CUDAPHASH_IPO_SUPPORTED OUTPUT CUDAPHASH_IPO_ERROR)
+    if(CUDAPHASH_IPO_SUPPORTED)
+        message(STATUS "Link Time Optimization (IPO/LTO) enabled")
+    else()
+        message(STATUS "Link Time Optimization not supported: ${CUDAPHASH_IPO_ERROR}")
+        set(CUDAPHASH_ENABLE_LTO OFF)
+    endif()
+endif()
+
+if(MSVC AND CUDAPHASH_ENABLE_PARALLEL_COMPILE)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/MP>)
+    set(CMAKE_VS_GLOBALS "UseMultiToolTask=true" "EnforceProcessCountAcrossBuilds=true")
+endif()
+
+include(CheckCXXCompilerFlag)
+option(CUDAPHASH_ENABLE_AVX2 "Enable AVX2 instructions if available" ON)
+
+if(CUDAPHASH_ENABLE_AVX2)
+    if(MSVC)
+        check_cxx_compiler_flag("/arch:AVX2" COMPILER_SUPPORTS_AVX2)
+        set(AVX2_FLAG "/arch:AVX2")
+    else()
+        check_cxx_compiler_flag("-mavx2 -mfma" COMPILER_SUPPORTS_AVX2)
+        set(AVX2_FLAG "-mavx2 -mfma")
+    endif()
+
+    if(COMPILER_SUPPORTS_AVX2)
+        message(STATUS "AVX2 support detected - enabling AVX2 optimizations")
+        set(CUDAPHASH_AVX2_AVAILABLE ON)
+    else()
+        message(STATUS "AVX2 not supported by compiler - using default instruction set")
+        set(CUDAPHASH_AVX2_AVAILABLE OFF)
+    endif()
+else()
+    set(CUDAPHASH_AVX2_AVAILABLE OFF)
+endif()
+
+option(ENABLE_CCACHE "Enable ccache/sccache for build caching" ON)
+if(ENABLE_CCACHE)
+    find_program(CCACHE_PROGRAM NAMES sccache ccache)
+    if(CCACHE_PROGRAM)
+        message(STATUS "Using ${CCACHE_PROGRAM} for build caching")
+        set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+        set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    else()
+        message(STATUS "Build caching requested but ccache/sccache not found")
+    endif()
+endif()
+
 find_package(CUDAToolkit REQUIRED)
 find_package(Threads REQUIRED)
 
-# Find cudadevrt library manually
-find_library(CUDA_CUDADEVRT_LIBRARY cudadevrt 
-    HINTS ${CUDAToolkit_LIBRARY_DIR}
-    PATH_SUFFIXES lib lib64)
+add_library(cudaphash_common_options INTERFACE)
+add_library(CudaPHash::CommonOptions ALIAS cudaphash_common_options)
 
-# Set CUDA architectures
-set(CMAKE_CUDA_ARCHITECTURES 86)
-
-# Global compile options for Release mode
-if(CMAKE_BUILD_TYPE STREQUAL "Release" OR NOT CMAKE_BUILD_TYPE)
-    # MSVC specific flags from the vcxproj files
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Oi /GL /Gy")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /arch:AVX2")  # EnableEnhancedInstructionSet
-    
-    # Enable whole program optimization
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-    
-    # CUDA specific flags
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/std:c++20\"")
-    # Additional Windows-specific CUDA flags
-    set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O2")
-endif()
-
-# Set output directories
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build/bin/Release/x64)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build/bin/Release/x64)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build/lib/Release/x64)
-
-# Define the CudapHash directory with proper path handling
-set(CUDA_PHASH_DIR "${CMAKE_SOURCE_DIR}/CudapHash")
-file(TO_CMAKE_PATH "${CUDA_PHASH_DIR}" CUDA_PHASH_DIR)
-
-# CudapHash static library
-file(GLOB CUDA_PHASH_SOURCES "${CUDA_PHASH_DIR}/src/*.cu")
-file(GLOB CUDA_PHASH_HEADERS 
-    "${CUDA_PHASH_DIR}/include/*.hpp"
-    "${CUDA_PHASH_DIR}/include/*.cuh"
-    "${CUDA_PHASH_DIR}/include/*.h"
-)
-
-add_library(CudaPhashLib STATIC ${CUDA_PHASH_SOURCES} ${CUDA_PHASH_HEADERS})
-
-# Set include directories for CudapHash library
-target_include_directories(CudaPhashLib PUBLIC
-    ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
-    ${CMAKE_SOURCE_DIR}/third_party
-    "${CUDA_PHASH_DIR}/include"
-)
-
-target_include_directories(CudaPhashLib PRIVATE
-    "${CUDA_PHASH_DIR}/src"
-)
-
-# Set compile definitions for CudapHash
-target_compile_definitions(CudaPhashLib PRIVATE
-    WIN32
-    WIN64
-    NDEBUG
-    _CONSOLE
-)
-
-# CUDA compile options
-set_target_properties(CudaPhashLib PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-    CUDA_RUNTIME_LIBRARY Shared
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-)
-
-# Set CUDA compilation flags per target
-target_compile_options(CudaPhashLib PRIVATE
-    $<$<COMPILE_LANGUAGE:CUDA>:
-        --generate-code=arch=compute_86,code=sm_86
-        --expt-extended-lambda
-        -Xcompiler=/bigobj
+target_compile_options(cudaphash_common_options INTERFACE
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:
+        $<$<CONFIG:Release>:/O2 /Ob3 /Oi /Ot /Oy /GL /Gy /GF /Gw /fp:fast /Qpar /favor:blend
+            $<$<BOOL:${CUDAPHASH_AVX2_AVAILABLE}>:${AVX2_FLAG}>>
+        $<$<CONFIG:RelWithDebInfo>:/O2 /Ob2 /Oi /Ot /fp:fast
+            $<$<BOOL:${CUDAPHASH_AVX2_AVAILABLE}>:${AVX2_FLAG}>>
+        $<$<CONFIG:MinSizeRel>:/O1 /Ob1 /Os /Oy /GL /Gy /GF /Gw>
+        $<$<CONFIG:Debug>:/Od /RTC1 /JMC /sdl /GS>
+        /W3 /permissive- /Zc:__cplusplus /Zc:inline /Zc:throwingNew
+    >
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:
+        $<$<CONFIG:Release>:-O3 -ffast-math -funroll-loops -ftree-vectorize
+            $<$<BOOL:${CUDAPHASH_ENABLE_NATIVE_ARCH}>:-march=native>
+            $<$<BOOL:${CUDAPHASH_AVX2_AVAILABLE}>:${AVX2_FLAG}>>
+        $<$<CONFIG:RelWithDebInfo>:-O2 -g
+            $<$<BOOL:${CUDAPHASH_AVX2_AVAILABLE}>:${AVX2_FLAG}>>
+        $<$<CONFIG:MinSizeRel>:-Os>
+        $<$<CONFIG:Debug>:-O0 -g3>
+        -Wall -Wextra -Wpedantic
     >
 )
 
-# Link CUDA libraries
-target_link_libraries(CudaPhashLib PUBLIC
-    CUDA::cudart
-    CUDA::cuda_driver
-    CUDA::nvjpeg
-    CUDA::cublas
+target_compile_options(cudaphash_common_options INTERFACE
+    $<$<COMPILE_LANGUAGE:CUDA>:
+        --expt-extended-lambda
+        --expt-relaxed-constexpr
+        -Wno-deprecated-gpu-targets
+        --threads 0
+        $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>,$<CONFIG:MinSizeRel>>:
+            --use_fast_math
+            --ftz=true
+            --prec-div=false
+            --prec-sqrt=false
+            --fmad=true
+            -O3
+        >
+        $<$<CONFIG:RelWithDebInfo>:-lineinfo>
+        $<$<CONFIG:Debug>:-G --debug -O0>
+        $<$<BOOL:${CUDA_VERBOSE_PTXAS}>:--ptxas-options=-v>
+        $<$<CXX_COMPILER_ID:MSVC>:-Xcompiler=/bigobj -Xcompiler=/fp:fast>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Xcompiler=-ffast-math>
+    >
 )
 
-# App executable
-add_executable(App
-    "App/src/main.cpp"
-    "App/src/helpers.cpp"
-    "App/src/save_results.cpp"
+target_compile_definitions(cudaphash_common_options INTERFACE
+    $<$<PLATFORM_ID:Windows>:WIN32 _WIN64 NOMINMAX>
+    $<$<CONFIG:Release>:NDEBUG>
+    $<$<CONFIG:RelWithDebInfo>:NDEBUG>
+    $<$<CONFIG:MinSizeRel>:NDEBUG>
 )
 
-# Set include directories for App
-target_include_directories(App PRIVATE
-    "${CUDA_PHASH_DIR}/include"
-    ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
-    ${CMAKE_SOURCE_DIR}/third_party
-    ${CMAKE_SOURCE_DIR}/App/include
+if(CUDAPHASH_ENABLE_LTO AND CUDAPHASH_IPO_SUPPORTED)
+    set_target_properties(cudaphash_common_options PROPERTIES
+        INTERFACE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
+        INTERFACE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO TRUE
+        INTERFACE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL TRUE
+    )
+endif()
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+# For multi-config generators (Visual Studio)
+foreach(CONFIG ${CMAKE_CONFIGURATION_TYPES})
+    string(TOUPPER ${CONFIG} CONFIG_UPPER)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG_UPPER} ${CMAKE_BINARY_DIR}/${CONFIG}/bin)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${CONFIG_UPPER} ${CMAKE_BINARY_DIR}/${CONFIG}/lib)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${CONFIG_UPPER} ${CMAKE_BINARY_DIR}/${CONFIG}/lib)
+endforeach()
+
+option(BUILD_TESTS "Build test suite" ON)
+option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
+
+if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    message(STATUS "Code coverage enabled")
+    add_compile_options(--coverage -O0 -g)
+    add_link_options(--coverage)
+elseif(ENABLE_COVERAGE AND MSVC)
+    message(WARNING "Code coverage not supported for MSVC")
+endif()
+
+add_subdirectory(CudapHash)
+add_subdirectory(App)
+
+if(BUILD_TESTS)
+    enable_testing()
+
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        v1.14.0
+    )
+
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+    FetchContent_MakeAvailable(googletest)
+
+    add_subdirectory(Test)
+endif()
+
+add_custom_target(cudaphash_all ALL
+    DEPENDS CudaPhashLib App
+    $<$<BOOL:${BUILD_TESTS}>:Tests>
+    COMMENT "Building all CudaPHash components"
 )
 
-# Link App with CudapHash library and CUDA runtime
-target_link_libraries(App PRIVATE
-    CudaPhashLib
-    CUDA::cudart
-    ${CUDA_CUDADEVRT_LIBRARY}
-    CUDA::nvjpeg
-    CUDA::cublas
+include(GNUInstallDirs)
+
+install(EXPORT CudaPHashTargets
+    FILE CudaPHashTargets.cmake
+    NAMESPACE CudaPHash::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/CudaPHash
 )
 
-# Set compile definitions for App
-target_compile_definitions(App PRIVATE
-    NDEBUG
-    _CONSOLE
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/CudaPHashConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
 )
 
-###########
-#  TESTS  #
-###########
-
-add_subdirectory(third_party/googletest)
-
-# Create a test executable that includes all test files
-add_executable(Tests
-    "Test/src/WorkQueueTests.cpp"
-    "Test/src/Unit.cpp"
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CudaPHashConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/CudaPHashConfig.cmake"
+    @ONLY
 )
 
-target_include_directories(Tests PRIVATE
-    "${CUDA_PHASH_DIR}/include"
-    "${CUDA_PHASH_DIR}/src"
-    ${CMAKE_SOURCE_DIR}/Test/include
-    ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/CudaPHashConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/CudaPHashConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/CudaPHash
 )
-
-target_link_libraries(Tests PRIVATE
-    CudaPhashLib
-    gtest
-    gtest_main
-    Threads::Threads
-    CUDA::cudart
-    CUDA::nvjpeg
-)
-
-# Keep the WorkQueueTests target for backwards compatibility
-add_executable(WorkQueueTests
-    "Test/src/WorkQueueTests.cpp"
-)
-
-target_include_directories(WorkQueueTests PRIVATE
-    "${CUDA_PHASH_DIR}/include"
-    "${CUDA_PHASH_DIR}/src"
-    ${CMAKE_SOURCE_DIR}/Test/include
-)
-
-target_link_libraries(WorkQueueTests PRIVATE
-    gtest
-    gtest_main
-    Threads::Threads
-)
-
-enable_testing()
-
-# For multi-config generators (e.g., Visual Studio), reference the target file so CTest
-# can locate the correct config binary. Invoke ctest with -C <Debug|Release>.
-add_test(NAME WorkQueueTests COMMAND $<TARGET_FILE:WorkQueueTests>)
-add_test(NAME AllTests COMMAND $<TARGET_FILE:Tests>)
-
-# Aggregate target
-add_custom_target(Solution ALL
-    DEPENDS CudaPhashLib App WorkQueueTests Tests
-)
-
-# Print configuration summary
-message(STATUS "=== CudapHash CMake Configuration ===")
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
-message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
-message(STATUS "CUDA Toolkit: ${CUDAToolkit_VERSION}")
-message(STATUS "OpenCV directory: ${OPENCV_DIR}")
-message(STATUS "Output directories:")
-message(STATUS "  Runtime: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
-message(STATUS "  Library: ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
-message(STATUS "  Archive: ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")

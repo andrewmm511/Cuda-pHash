@@ -1,0 +1,224 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 24,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "installDir": "${sourceDir}/install/${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CUDAPHASH_CUDA_ARCHITECTURES": "75;86;89;90"
+            }
+        },
+        {
+            "name": "windows-base",
+            "hidden": true,
+            "inherits": "base",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "generator": "Visual Studio 17 2022",
+            "architecture": {
+                "value": "x64",
+                "strategy": "set"
+            },
+            "cacheVariables": {
+                "CMAKE_SYSTEM_VERSION": "10.0"
+            }
+        },
+        {
+            "name": "windows-debug",
+            "displayName": "Windows Debug",
+            "description": "Debug build with Visual Studio (no optimizations)",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_TESTS": "ON",
+                "CUDAPHASH_ENABLE_LTO": "OFF",
+                "CUDAPHASH_ENABLE_FAST_MATH": "OFF",
+                "CUDA_VERBOSE_PTXAS": "OFF"
+            }
+        },
+        {
+            "name": "windows-release",
+            "displayName": "Windows Release",
+            "description": "Release build with Visual Studio (full optimizations)",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_TESTS": "ON",
+                "CUDAPHASH_ENABLE_LTO": "ON",
+                "CUDAPHASH_ENABLE_FAST_MATH": "ON",
+                "CUDAPHASH_ENABLE_AVX2": "ON",
+                "CUDA_VERBOSE_PTXAS": "OFF"
+            }
+        },
+        {
+            "name": "windows-release-native",
+            "displayName": "Windows Release (Native)",
+            "description": "Release build optimized for current CPU",
+            "inherits": "windows-release",
+            "cacheVariables": {
+                "CUDAPHASH_ENABLE_NATIVE_ARCH": "ON"
+            }
+        },
+        {
+            "name": "windows-relwithdebinfo",
+            "displayName": "Windows RelWithDebInfo",
+            "description": "Optimized build with debug information",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "BUILD_TESTS": "ON",
+                "CUDAPHASH_ENABLE_LTO": "ON",
+                "CUDAPHASH_ENABLE_FAST_MATH": "ON",
+                "CUDAPHASH_ENABLE_AVX2": "ON"
+            }
+        },
+        {
+            "name": "windows-minsizerel",
+            "displayName": "Windows MinSizeRel",
+            "description": "Size-optimized release build",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "MinSizeRel",
+                "BUILD_TESTS": "OFF",
+                "CUDAPHASH_ENABLE_LTO": "ON",
+                "CUDAPHASH_ENABLE_FAST_MATH": "ON",
+                "CUDAPHASH_ENABLE_AVX2": "OFF"
+            }
+        },
+        {
+            "name": "ci-windows",
+            "displayName": "CI Windows",
+            "description": "Configuration for continuous integration",
+            "inherits": "windows-release",
+            "cacheVariables": {
+                "BUILD_TESTS": "ON",
+                "ENABLE_CCACHE": "ON",
+                "CUDA_VERBOSE_PTXAS": "ON",
+                "CUDAPHASH_ENABLE_NATIVE_ARCH": "OFF"
+            }
+        },
+        {
+            "name": "linux-base",
+            "hidden": true,
+            "inherits": "base",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            },
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "g++",
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CUDA_COMPILER": "nvcc"
+            }
+        },
+        {
+            "name": "linux-debug",
+            "displayName": "Linux Debug",
+            "description": "Debug build with GCC/Ninja",
+            "inherits": "linux-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_TESTS": "ON",
+                "CUDAPHASH_ENABLE_LTO": "OFF",
+                "ENABLE_COVERAGE": "OFF"
+            }
+        },
+        {
+            "name": "linux-release",
+            "displayName": "Linux Release",
+            "description": "Release build with GCC/Ninja",
+            "inherits": "linux-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_TESTS": "ON",
+                "CUDAPHASH_ENABLE_LTO": "ON",
+                "CUDAPHASH_ENABLE_FAST_MATH": "ON",
+                "CUDAPHASH_ENABLE_AVX2": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "windows-debug-build",
+            "configurePreset": "windows-debug",
+            "displayName": "Build Windows Debug",
+            "description": "Build Windows Debug configuration",
+            "configuration": "Debug"
+        },
+        {
+            "name": "windows-release-build",
+            "configurePreset": "windows-release",
+            "displayName": "Build Windows Release",
+            "description": "Build Windows Release configuration",
+            "configuration": "Release",
+            "jobs": 0
+        },
+        {
+            "name": "windows-release-native-build",
+            "configurePreset": "windows-release-native",
+            "displayName": "Build Windows Release Native",
+            "description": "Build Windows Release with native CPU optimizations",
+            "configuration": "Release",
+            "jobs": 0
+        },
+        {
+            "name": "linux-debug-build",
+            "configurePreset": "linux-debug",
+            "displayName": "Build Linux Debug",
+            "description": "Build Linux Debug configuration"
+        },
+        {
+            "name": "linux-release-build",
+            "configurePreset": "linux-release",
+            "displayName": "Build Linux Release",
+            "description": "Build Linux Release configuration",
+            "jobs": 0
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "windows-test",
+            "configurePreset": "windows-release",
+            "displayName": "Test Windows",
+            "description": "Run tests on Windows",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true,
+                "verbosity": "default"
+            }
+        },
+        {
+            "name": "linux-test",
+            "configurePreset": "linux-release",
+            "displayName": "Test Linux",
+            "description": "Run tests on Linux",
+            "output": {
+                "outputOnFailure": true,
+                "verbosity": "default"
+            }
+        }
+    ],
+    "packagePresets": [
+        {
+            "name": "windows-package",
+            "configurePreset": "windows-release",
+            "displayName": "Package Windows",
+            "description": "Create Windows package",
+            "configurations": ["Release"],
+            "generators": ["ZIP", "NSIS"]
+        }
+    ]
+}
