@@ -44,7 +44,6 @@ jobs:
     - name: Configure CMake
       run: |
         cmake --preset=windows-release
-          -DCMAKE_CUDA_COMPILER="${{ steps.cuda-toolkit.outputs.cuda-path }}/bin/nvcc.exe"
       shell: powershell
 
     - name: Build
