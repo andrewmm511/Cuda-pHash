@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.31)
-project(CudaPHash VERSION 1.0.0 LANGUAGES CXX CUDA)
+project(CudaPHash VERSION 0.1.0 LANGUAGES CXX CUDA)
 
 cmake_policy(SET CMP0135 NEW)
 cmake_policy(SET CMP0077 NEW)
