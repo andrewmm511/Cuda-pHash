@@ -23,6 +23,14 @@ target_link_libraries(App
         $<BUILD_INTERFACE:CudaPHash::CommonOptions>
 )
 
+add_custom_command(TARGET App POST_BUILD
+  COMMAND ${CMAKE_COMMAND}
+          -D TARGET_FILE=$<TARGET_FILE:App>
+          -D DEST_DIR=$<TARGET_FILE_DIR:App>
+          -D EXTRA_DIRS=${CUDAToolkit_BIN_DIR}
+          -P ${CMAKE_SOURCE_DIR}/cmake/copy_runtime_deps.cmake
+)
+
 target_compile_definitions(App
     PRIVATE
         _CONSOLE
@@ -39,4 +47,11 @@ endif()
 install(TARGETS App
     EXPORT CudaPHashTargets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(TARGETS App
+    RUNTIME_DEPENDENCIES
+	DIRECTORIES "${CUDAToolkit_BIN_DIR}"
+    PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-"
+    POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
 )

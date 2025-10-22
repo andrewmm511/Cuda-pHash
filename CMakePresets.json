@@ -12,8 +12,7 @@
             "binaryDir": "${sourceDir}/build/${presetName}",
             "installDir": "${sourceDir}/install/${presetName}",
             "cacheVariables": {
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CUDAPHASH_CUDA_ARCHITECTURES": "75;86;89;90"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
             }
         },
         {
@@ -59,6 +58,16 @@
                 "CUDAPHASH_ENABLE_FAST_MATH": "ON",
                 "CUDAPHASH_ENABLE_AVX2": "ON",
                 "CUDA_VERBOSE_PTXAS": "OFF"
+            }
+        },
+		{
+            "name": "windows-installer",
+            "displayName": "Windows Installer",
+            "description": "Release build for installer with Visual Studio",
+            "inherits": "windows-release",
+            "cacheVariables": {
+                "BUILD_WINDOWS_INSTALLER": "ON",
+                "BUILD_TESTS": "OFF"
             }
         },
         {
@@ -166,6 +175,14 @@
             "configuration": "Release",
             "jobs": 0
         },
+		{ 
+			"name": "windows-installer-build",
+            "configurePreset": "windows-installer",
+			"displayName": "Build Windows Installer",
+            "description": "Build Windows Installer configuration",
+            "configuration": "Release",
+            "jobs": 0
+		},
         {
             "name": "windows-release-native-build",
             "configurePreset": "windows-release-native",

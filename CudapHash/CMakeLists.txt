@@ -24,7 +24,6 @@ set(PRIVATE_HEADERS
 )
 
 add_library(CudaPhashLib STATIC)
-
 add_library(CudaPHash::CudaPhashLib ALIAS CudaPhashLib)
 
 target_sources(CudaPhashLib
@@ -69,9 +68,12 @@ if(CUDAPHASH_ENABLE_LTO AND CUDAPHASH_IPO_SUPPORTED)
     )
 endif()
 
+option(CUDAPHASH_STATIC_CUDART "Link CUDA runtime statically" ON)
+set(CUDART_TARGET $<IF:$<BOOL:${CUDAPHASH_STATIC_CUDART}>,CUDA::cudart_static,CUDA::cudart>)
+
 target_link_libraries(CudaPhashLib 
     PUBLIC
-        CUDA::cudart
+        ${CUDART_TARGET}
         CUDA::cuda_driver
         CUDA::nvjpeg
         CUDA::cublas

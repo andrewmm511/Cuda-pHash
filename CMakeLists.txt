@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.31)
 project(CudaPHash VERSION 1.0.0 LANGUAGES CXX CUDA)
 
 cmake_policy(SET CMP0135 NEW)
 cmake_policy(SET CMP0077 NEW)
+
+include(GNUInstallDirs)
 
 # Set default build type if not specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -17,8 +19,17 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CUDAPHASH_CUDA_ARCHITECTURES "75;86;89;90" CACHE STRING "CUDA architectures to build for")
+set(CUDAPHASH_CUDA_ARCHITECTURES
+    "75-real;86-real;89-real;90-real;86-virtual;89-virtual;90-virtual"
+    CACHE STRING "CUDA architectures to build for" FORCE
+)
 set(CMAKE_CUDA_ARCHITECTURES ${CUDAPHASH_CUDA_ARCHITECTURES})
+set(CMAKE_CUDA_RUNTIME_LIBRARY Static)
+
+option(CUDAPHASH_STATIC_MSVC_RUNTIME "Link MSVC runtime statically" ON)
+if(MSVC AND CUDAPHASH_STATIC_MSVC_RUNTIME)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 
 option(CUDAPHASH_ENABLE_LTO "Enable Link Time Optimization" ON)
 option(CUDAPHASH_ENABLE_NATIVE_ARCH "Build for native CPU architecture" OFF)
@@ -191,8 +202,6 @@ add_custom_target(cudaphash_all ALL
     COMMENT "Building all CudaPHash components"
 )
 
-include(GNUInstallDirs)
-
 install(EXPORT CudaPHashTargets
     FILE CudaPHashTargets.cmake
     NAMESPACE CudaPHash::
@@ -217,3 +226,24 @@ install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/CudaPHashConfigVersion.cmake"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/CudaPHash
 )
+
+# --- Installer ---
+
+option(BUILD_WINDOWS_INSTALLER "Build Windows installer" OFF)
+
+If(BUILD_WINDOWS_INSTALLER)
+	set(CPACK_GENERATOR "NSIS")
+	set(CPACK_PACKAGE_NAME "CudaPHash")
+	set(CPACK_PACKAGE_VENDOR "Andrew Martin")
+	set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+	set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+
+
+	set(CPACK_PACKAGE_INSTALL_DIRECTORY "CudaPHash")
+	set(CPACK_NSIS_INSTALL_ROOT "$PROGRAMFILES64")
+
+	set(CPACK_NSIS_MODIFY_PATH ON)
+	set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
+
+	include(CPack)
+endif()
