@@ -34,7 +34,6 @@ jobs:
       with:
         cuda: ${{ env.CUDA_VERSION }}
         method: 'local'
-        sub-packages: '["nvcc", "cudart", "visual_studio_integration", "nvjpeg", "nvjpeg_dev", "cufft", "cublas"]'
         log-file-suffix: 'win-64.txt'
 
     - name: Setup MSVC
