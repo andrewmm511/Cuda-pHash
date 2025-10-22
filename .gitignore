@@ -4,6 +4,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+CppProperties.json
 
 # Build results
 build/
@@ -64,16 +65,21 @@ ipch/
 
 # Build and test logs
 *.tlog
+FuncStats.txt
+GuidStats.txt
 
 # CUDA dependencies cache
 *.deps
 *.cache
 
-# misc
-vcpkg.applocal.log
-.claude
+# AI Junk
+/.claude
 CLAUDE.md
 AGENTS.md
-nul
 /AGENTS.md
 /CLAUDE.md
+
+# misc
+vcpkg.applocal.log
+nul
+
