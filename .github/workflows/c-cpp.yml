@@ -11,7 +11,7 @@ on:
 
 env:
   BUILD_TYPE: Release
-  CUDA_VERSION: '12.9.1'
+  CUDA_VERSION: '12.9.0'
 
 jobs:
   build:
