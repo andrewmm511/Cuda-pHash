@@ -29,15 +29,13 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Setup CUDA
-      uses: Jimver/cuda-toolkit@master
+      uses: Jimver/cuda-toolkit@v0.2.28
       id: cuda-toolkit
       with:
         cuda: ${{ env.CUDA_VERSION }}
-        method: 'network'
+        method: 'local'
         sub-packages: '["nvcc", "cudart", "visual_studio_integration", "nvjpeg", "nvjpeg_dev", "cufft", "cublas"]'
         log-file-suffix: 'win-64.txt'
-        use-github-cache: false
-        use-local-cache: false
 
     - name: Setup MSVC
       uses: TheMrMilchmann/setup-msvc-dev@v4
