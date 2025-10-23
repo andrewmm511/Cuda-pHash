@@ -1,0 +1,357 @@
+name: CUDA Tests with GPU Runner
+
+on:
+  workflow_run:
+    workflows: ["Build and Release"]
+    types:
+      - completed
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      vm_size:
+        description: 'Azure VM Size'
+        required: false
+        default: 'Standard_NV6ads_A10_v5'
+        type: choice
+        options:
+          - Standard_NV6ads_A10_v5
+          - Standard_NC4as_T4_v3
+      use_spot:
+        description: 'Use Spot Instance'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  BUILD_CONFIGURATION: Release
+  AZURE_RESOURCE_GROUP: gh-runners-rg
+  AZURE_LOCATION: eastus
+
+jobs:
+  provision-vm:
+    name: Provision GPU VM
+    runs-on: ubuntu-latest
+    if: needs.check-build.outputs.should_run == 'true'
+    outputs:
+      vm_name: ${{ steps.create-vm.outputs.vm_name }}
+      vm_id: ${{ steps.create-vm.outputs.vm_id }}
+      runner_name: ${{ steps.create-vm.outputs.vm_name }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Verify Azure subscription
+      run: |
+        echo "Verifying Azure access..."
+        az account show
+        az group show --name ${{ env.AZURE_RESOURCE_GROUP }}
+    
+    - name: Generate GitHub Runner Token
+      id: generate-token
+      run: |
+        echo "Generating GitHub runner registration token..."
+        
+        RUNNER_TOKEN=$(curl -s -X POST \
+          -H "Authorization: token ${{ secrets.GH_PAT }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/actions/runners/registration-token \
+          | jq -r .token)
+        
+        if [ -z "$RUNNER_TOKEN" ] || [ "$RUNNER_TOKEN" == "null" ]; then
+          echo "ERROR: Failed to generate runner token"
+          echo "Check that GH_PAT has correct permissions: repo, workflow, admin:org"
+          exit 1
+        fi
+        
+        echo "::add-mask::$RUNNER_TOKEN"
+        echo "runner_token=$RUNNER_TOKEN" >> $GITHUB_OUTPUT
+        echo "Runner token generated successfully"
+    
+    - name: Create GPU VM
+      id: create-vm
+      env:
+        AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}
+        AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        ADMIN_PASSWORD: ${{ secrets.VM_ADMIN_PASSWORD }}
+        VM_SIZE: ${{ inputs.vm_size || 'Standard_NV6ads_A10_v5' }}
+      run: |
+        chmod +x .github/scripts/provision-gpu-runner.sh
+        .github/scripts/provision-gpu-runner.sh
+    
+    - name: Configure GitHub Runner on VM
+      run: |
+        VM_NAME="${{ steps.create-vm.outputs.vm_name }}"
+        
+        echo "Installing GitHub runner on VM: $VM_NAME"
+        
+        # Execute via Custom Script Extension
+        az vm extension set \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --vm-name $VM_NAME \
+          --name CustomScriptExtension \
+          --publisher Microsoft.Compute \
+          --protected-settings "{
+            \"commandToExecute\": \"powershell -ExecutionPolicy Unrestricted -Command \\\"\\\$env:GH_RUNNER_TOKEN='${{ steps.generate-token.outputs.runner_token }}'; \\\$env:GH_REPO='${{ github.repository }}'; \\\$env:RUNNER_NAME='$VM_NAME'; \\\$env:RUN_ID='${{ github.run_id }}'; Set-Location 'C:\\\\actions-runner'; if (Test-Path '.runner') { .\\\\config.cmd remove --token \\\$env:GH_RUNNER_TOKEN }; .\\\\config.cmd --unattended --url 'https://github.com/\\\$env:GH_REPO' --token \\\$env:GH_RUNNER_TOKEN --name \\\$env:RUNNER_NAME --labels 'self-hosted,Windows,X64,gpu,cuda,run-\\\$env:RUN_ID' --work '_work' --replace; Start-Process -FilePath '.\\\\run.cmd' -NoNewWindow\\\"\"
+          }"
+        
+        echo "Runner configuration script executed"
+    
+    - name: Wait for runner to be online
+      timeout-minutes: 10
+      run: |
+        RUNNER_NAME="${{ steps.create-vm.outputs.vm_name }}"
+        echo "Waiting for runner '$RUNNER_NAME' to come online..."
+        
+        MAX_ATTEMPTS=60
+        ATTEMPT=0
+        
+        while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+          ATTEMPT=$((ATTEMPT + 1))
+          
+          # Check runner status
+          RUNNER_STATUS=$(curl -s \
+            -H "Authorization: token ${{ secrets.GH_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/actions/runners \
+            | jq -r ".runners[] | select(.name==\"$RUNNER_NAME\") | .status")
+          
+          if [ "$RUNNER_STATUS" == "online" ]; then
+            echo "✓ Runner is online and ready!"
+            exit 0
+          fi
+          
+          echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Runner status is '$RUNNER_STATUS'. Waiting 10s..."
+          sleep 10
+        done
+        
+        echo "ERROR: Runner failed to come online within timeout"
+        echo "Check VM boot diagnostics: az vm boot-diagnostics get-boot-log -g ${{ env.AZURE_RESOURCE_GROUP }} -n $RUNNER_NAME"
+        exit 1
+    
+    - name: Runner provisioning summary
+      run: |
+        echo "=========================================="
+        echo "GPU Runner Provisioned Successfully"
+        echo "=========================================="
+        echo "VM Name: ${{ steps.create-vm.outputs.vm_name }}"
+        echo "VM ID: ${{ steps.create-vm.outputs.vm_id }}"
+        echo "Runner Status: Online"
+        echo "Ready for test execution"
+        echo "=========================================="
+
+  test:
+    name: Run Tests
+    needs: provision-vm
+    runs-on: self-hosted
+    labels: 
+      - self-hosted
+      - Windows
+      - X64
+      - gpu
+      - cuda
+      - run-${{ github.run_id }}
+    
+    steps:
+    - name: Runner environment info
+      shell: pwsh
+      run: |
+        Write-Host "=========================================="
+        Write-Host "GPU Test Runner Environment"
+        Write-Host "=========================================="
+        Write-Host "Computer Name: $env:COMPUTERNAME"
+        Write-Host "OS: $(Get-WmiObject Win32_OperatingSystem | Select-Object -ExpandProperty Caption)"
+        Write-Host "Working Directory: $PWD"
+        Write-Host "=========================================="
+    
+    - name: Verify CUDA installation
+      shell: pwsh
+      run: |
+        Write-Host "Verifying CUDA environment..."
+        
+        # Check NVCC
+        try {
+          $nvccOutput = & nvcc --version 2>&1 | Out-String
+          Write-Host "✓ NVCC Version:"
+          Write-Host $nvccOutput
+        } catch {
+          Write-Error "NVCC not found!"
+          exit 1
+        }
+        
+        # Check NVIDIA GPU
+        try {
+          $gpuInfo = & nvidia-smi 2>&1 | Out-String
+          Write-Host "`n✓ NVIDIA GPU Info:"
+          Write-Host $gpuInfo
+        } catch {
+          Write-Error "nvidia-smi failed!"
+          exit 1
+        }
+        
+        Write-Host "CUDA environment verified successfully"
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ needs.check-build.outputs.artifact_name }}
+        github-token: ${{ secrets.GH_PAT }}
+        run-id: ${{ github.event.workflow_run.id }}
+    
+    - name: Extract build artifacts
+      shell: pwsh
+      run: |
+        Write-Host "Extracting build artifacts..."
+        
+        $zipFile = "cuda-build-${{ needs.check-build.outputs.commit_sha }}.zip"
+        
+        if (-not (Test-Path $zipFile)) {
+          Write-Error "Build artifact not found: $zipFile"
+          Write-Host "Available files:"
+          Get-ChildItem | Select-Object Name, Length
+          exit 1
+        }
+        
+        # Extract to current directory
+        Expand-Archive -Path $zipFile -DestinationPath . -Force
+        
+        Write-Host "Build artifacts extracted"
+        
+        # List contents for verification
+        Write-Host "`nExtracted contents:"
+        Get-ChildItem -Recurse | Select-Object FullName, Length | Format-Table
+    
+    - name: Run CTest
+      shell: pwsh
+      run: |
+        Write-Host "=========================================="
+        Write-Host "Running GPU Tests with CTest"
+        Write-Host "=========================================="
+        
+        # Navigate to the build directory
+        # Adjust path based on where your build artifacts extract to
+        $testDir = "build/windows-release"
+        
+        if (-not (Test-Path $testDir)) {
+          Write-Error "Test directory not found: $testDir"
+          Write-Host "Looking for test directory..."
+          Get-ChildItem -Recurse -Directory | Where-Object { $_.Name -like "*test*" -or $_.Name -like "*build*" }
+          exit 1
+        }
+        
+        # Run CTest with GPU
+        Write-Host "`nExecuting: ctest --test-dir $testDir -C Release --output-on-failure --verbose"
+        
+        ctest --test-dir $testDir -C Release --output-on-failure --verbose
+        
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "Tests failed with exit code: $LASTEXITCODE"
+          exit $LASTEXITCODE
+        }
+        
+        Write-Host "`n=========================================="
+        Write-Host "All tests passed successfully!"
+        Write-Host "=========================================="
+    
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: gpu-test-results-${{ needs.check-build.outputs.commit_sha }}
+        path: |
+          build/windows-release/Testing/**/*
+          **/*.log
+          **/*test*.xml
+        if-no-files-found: ignore
+    
+    - name: Test execution summary
+      if: always()
+      shell: pwsh
+      run: |
+        Write-Host "=========================================="
+        Write-Host "Test Execution Complete"
+        Write-Host "Status: ${{ job.status }}"
+        Write-Host "Commit: ${{ needs.check-build.outputs.commit_sha }}"
+        Write-Host "=========================================="
+
+  cleanup:
+    name: Cleanup VM
+    needs: [provision-vm, test]
+    runs-on: ubuntu-latest
+    if: always() && needs.provision-vm.result != 'skipped'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Remove GitHub runner registration
+      continue-on-error: true
+      run: |
+        RUNNER_NAME="${{ needs.provision-vm.outputs.runner_name }}"
+        
+        if [ -z "$RUNNER_NAME" ]; then
+          echo "No runner name available, skipping runner removal"
+          exit 0
+        fi
+        
+        echo "Removing GitHub runner: $RUNNER_NAME"
+        
+        # Get runner ID
+        RUNNER_ID=$(curl -s \
+          -H "Authorization: token ${{ secrets.GH_PAT }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/actions/runners \
+          | jq -r ".runners[] | select(.name==\"$RUNNER_NAME\") | .id")
+        
+        if [ -n "$RUNNER_ID" ] && [ "$RUNNER_ID" != "null" ]; then
+          # Remove the runner
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
+            -H "Authorization: token ${{ secrets.GH_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/actions/runners/$RUNNER_ID)
+          
+          if [ "$HTTP_CODE" == "204" ]; then
+            echo "Runner removed successfully"
+          else
+            echo "Warning: Runner removal returned HTTP $HTTP_CODE"
+          fi
+        else
+          echo "Runner not found or already removed"
+        fi
+    
+    - name: Delete Azure VM and resources
+      env:
+        AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}
+        VM_NAME: ${{ needs.provision-vm.outputs.vm_name }}
+      run: |
+        if [ -z "$VM_NAME" ]; then
+          echo "No VM name available, skipping VM deletion"
+          exit 0
+        fi
+        
+        chmod +x .github/scripts/cleanup-gpu-runner.sh
+        .github/scripts/cleanup-gpu-runner.sh
+    
+    - name: Cleanup summary
+      if: always()
+      run: |
+        echo "=========================================="
+        echo "Cleanup Status"
+        echo "=========================================="
+        echo "VM Name: ${{ needs.provision-vm.outputs.vm_name }}"
+        echo "Cleanup initiated successfully"
+        echo "Resources will be fully deleted within 5 minutes"
+        echo "=========================================="

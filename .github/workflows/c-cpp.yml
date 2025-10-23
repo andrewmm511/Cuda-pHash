@@ -50,86 +50,19 @@ jobs:
       run: cmake --build build/windows-release --config ${{ matrix.build_config }}
       shell: powershell
 
-    - name: Run Tests
-      #working-directory: build
-      run: ctest --test-dir build/windows-release -C Release --output-on-failure --verbose
-      shell: powershell
-      continue-on-error: false
-
-    - name: Prepare Artifacts
-      if: success()
+    - name: Package build artifacts
+      shell: pwsh
       run: |
+        Write-Host "Packaging build artifacts for GPU testing..."
         New-Item -ItemType Directory -Force -Path artifacts
-
-        Copy-Item -Path "build/windows-release/${{ matrix.build_config }}/bin/cudaphash.exe" -Destination artifacts/ -Force -ErrorAction SilentlyContinue
-
-        Copy-Item -Path "build/windows-release/${{ matrix.build_config }}/lib/cudaphash.lib" -Destination artifacts/ -Force -ErrorAction SilentlyContinue
-        
-        Copy-Item -Path "build/windows-release/${{ matrix.build_config }}/lib/nvjpeg64_*.dll" -Destination artifacts/ -Force -ErrorAction SilentlyContinue
-        Copy-Item -Path "build/windows-release/${{ matrix.build_config }}/lib/cublas64_*.dll" -Destination artifacts/ -Force -ErrorAction SilentlyContinue
-        Copy-Item -Path "build/windows-release/${{ matrix.build_config }}/lib/cublasLt64_*.dll" -Destination artifacts/ -Force -ErrorAction SilentlyContinue
-        
-        Compress-Archive -Path artifacts/* -DestinationPath "${{ matrix.name }}-${{ github.sha }}.zip"
-      shell: powershell
-
-    - name: Upload Build Artifacts
+        Copy-Item -Path "build/windows-release/*" -Destination artifacts/ -Recurse -Force
+        Compress-Archive -Path artifacts/* -DestinationPath cuda-build-${{ github.sha }}.zip
+        Write-Host "Build artifacts packaged successfully"
+    
+    - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.name }}-artifacts
-        path: |
-          artifacts/
-          *.zip
-        retention-days: 30
-
-    - name: Upload Test Results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.name }}-test-results
-        path: build/Testing/
+        name: cuda-build-${{ github.sha }}
+        path: cuda-build-${{ github.sha }}.zip
         retention-days: 7
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    
-    permissions:
-      contents: write
-    
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: release-artifacts
-
-    - name: Prepare Release Assets
-      run: |
-        cd release-artifacts
-        for dir in */; do
-          if [[ $dir == *"-artifacts"* ]]; then
-            cd "$dir"
-            zip -r "../${dir%-artifacts/}.zip" *
-            cd ..
-          fi
-        done
-
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        name: Release ${{ github.ref_name }}
-        draft: false
-        prerelease: false
-        generate_release_notes: true
-        files: |
-          release-artifacts/*.zip
-        body: |
-          ## Release ${{ github.ref_name }}
-          
-          ### Build Information
-          - Build Type: ${{ env.BUILD_TYPE }}
-          - CUDA Version: ${{ env.CUDA_VERSION }}
-          - Commit: ${{ github.sha }}
+        if-no-files-found: error
