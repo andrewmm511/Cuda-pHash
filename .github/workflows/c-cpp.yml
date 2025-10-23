@@ -14,8 +14,78 @@ env:
   CUDA_VERSION: '12.9.0'
 
 jobs:
+  provision-vm:
+    name: Start VM
+    runs-on: ubuntu-latest
+    outputs:
+      vm_name: ${{ steps.create-vm.outputs.vm_name }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Generate Runner Token
+      id: generate-token
+      run: |
+        RUNNER_TOKEN=$(curl -s -X POST \
+          -H "Authorization: token ${{ secrets.GH_PAT }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/actions/runners/registration-token \
+          | jq -r .token)
+        echo "::add-mask::$RUNNER_TOKEN"
+        echo "runner_token=$RUNNER_TOKEN" >> $GITHUB_OUTPUT
+    
+    - name: Create VM
+      id: create-vm
+      env:
+        AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}
+        AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+        ADMIN_PASSWORD: ${{ secrets.VM_ADMIN_PASSWORD }}
+      run: |
+        chmod +x .github/scripts/provision-gpu-runner.sh
+        .github/scripts/provision-gpu-runner.sh
+    
+    - name: Configure Runner on VM
+      run: |
+        VM_NAME="${{ steps.create-vm.outputs.vm_name }}"
+        
+        az vm extension set \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --vm-name $VM_NAME \
+          --name CustomScriptExtension \
+          --publisher Microsoft.Compute \
+          --protected-settings "{
+            \"commandToExecute\": \"powershell -ExecutionPolicy Unrestricted -Command \\\"\\\$env:GH_RUNNER_TOKEN='${{ steps.generate-token.outputs.runner_token }}'; \\\$env:GH_REPO='${{ github.repository }}'; Set-Location 'C:\\\\actions-runner'; if (Test-Path '.runner') { .\\\\config.cmd remove --token \\\$env:GH_RUNNER_TOKEN }; .\\\\config.cmd --unattended --url 'https://github.com/\\\$env:GH_REPO' --token \\\$env:GH_RUNNER_TOKEN --name '$VM_NAME' --labels 'gpu,cuda,windows' --work '_work' --replace; Start-Process -FilePath '.\\\\run.cmd' -NoNewWindow\\\"\"
+          }"
+    
+    - name: Wait for runner
+      timeout-minutes: 10
+      run: |
+        RUNNER_NAME="${{ steps.create-vm.outputs.vm_name }}"
+        for i in {1..60}; do
+          STATUS=$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" \
+            https://api.github.com/repos/${{ github.repository }}/actions/runners | \
+            jq -r ".runners[] | select(.name==\"$RUNNER_NAME\") | .status")
+          
+          if [ "$STATUS" == "online" ]; then
+            echo "Runner online!"
+            exit 0
+          fi
+          echo "Waiting... ($i/60)"
+          sleep 10
+        done
+        exit 1
+
+
   build:
-    runs-on: windows-2022
+    runs-on: [self-hosted, gpu, cuda, windows]
     
     strategy:
       matrix:
@@ -28,19 +98,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Setup CUDA
-      uses: Jimver/cuda-toolkit@v0.2.24
-      id: cuda-toolkit
-      with:
-        cuda: ${{ env.CUDA_VERSION }}
-        method: 'local'
-        log-file-suffix: 'win-64.txt'
-
-    - name: Setup MSVC
-      uses: TheMrMilchmann/setup-msvc-dev@v4
-      with:
-        arch: ${{ matrix.architecture }}
-
     - name: Configure CMake
       run: |
         cmake --preset=windows-release
@@ -50,19 +107,13 @@ jobs:
       run: cmake --build build/windows-release --config ${{ matrix.build_config }}
       shell: powershell
 
-    - name: Package build artifacts
-      shell: pwsh
-      run: |
-        Write-Host "Packaging build artifacts for GPU testing..."
-        New-Item -ItemType Directory -Force -Path artifacts
-        Copy-Item -Path "build/windows-release/*" -Destination artifacts/ -Recurse -Force
-        Compress-Archive -Path artifacts/* -DestinationPath cuda-build-${{ github.sha }}.zip
-        Write-Host "Build artifacts packaged successfully"
-    
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: cuda-build-${{ github.sha }}
-        path: cuda-build-${{ github.sha }}.zip
-        retention-days: 7
-        if-no-files-found: error
+        name: cuda-build-windows-x64
+        path: |
+          build/windows-release/**/*.exe
+          build/windows-release/**/*.dll
+          build/windows-release/**/*.lib
+          build/windows-release/Testing/
+        retention-days: 1
