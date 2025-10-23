@@ -64,16 +64,12 @@ create_vm() {
         --public-ip-sku Standard \
         --nsg "${VM_NAME}-nsg" \
         --storage-sku Premium_LRS \
-        --os-disk-size-gb 128 \
+        --os-disk-size-gb 30 \
         --priority Spot \
-        --max-price -1 \
+        --max-price "1" \
         --eviction-policy Delete \
         --accelerated-networking true \
-        --tags \
-            "github_run_id=${GITHUB_RUN_ID:-manual}" \
-            "github_repository=${GITHUB_REPOSITORY:-manual}" \
-            "created_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            "auto_cleanup=true" \
+        --tags github_run_id="${GITHUB_RUN_ID:-manual}" github_repository="${GITHUB_REPOSITORY:-manual}" auto_cleanup=true \
         --output none
     
     if [ $? -eq 0 ]; then
