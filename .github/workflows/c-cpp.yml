@@ -56,14 +56,15 @@ jobs:
       run: |
         VM_NAME="${{ steps.create-vm.outputs.vm_name }}"
         
-        az vm extension set \
+        az vm run-command invoke \
           --resource-group "gh-runners-rg" \
-          --vm-name $VM_NAME \
-          --name CustomScriptExtension \
-          --publisher Microsoft.Compute \
-          --protected-settings "{
-            \"commandToExecute\": \"powershell -ExecutionPolicy Unrestricted -Command \\\"\\\$env:GH_RUNNER_TOKEN='${{ steps.generate-token.outputs.runner_token }}'; \\\$env:GH_REPO='${{ github.repository }}'; Set-Location 'C:\\\\actions-runner'; if (Test-Path '.runner') { .\\\\config.cmd remove --token \\\$env:GH_RUNNER_TOKEN }; .\\\\config.cmd --unattended --url 'https://github.com/\\\$env:GH_REPO' --token \\\$env:GH_RUNNER_TOKEN --name '$VM_NAME' --labels 'gpu,cuda,windows' --work '_work' --replace; Start-Process -FilePath '.\\\\run.cmd' -NoNewWindow\\\"\"
-          }"
+          --name $VM_NAME \
+          --command-id RunPowerShellScript \
+          --scripts "
+            \$env:GH_RUNNER_TOKEN='${{ steps.generate-token.outputs.runner_token }}'
+            \$env:GH_REPO='${{ github.repository }}'
+            C:\actions-runner\startup.ps1
+          "
     
     - name: Wait for runner
       timeout-minutes: 10
