@@ -43,8 +43,8 @@ jobs:
     - name: Create VM
       id: create-vm
       env:
-        AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}
-        AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
+        AZURE_RESOURCE_GROUP: "gh-runners-rg"
+        AZURE_LOCATION: "eastus"
         GITHUB_RUN_ID: ${{ github.run_id }}
         GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
         ADMIN_PASSWORD: ${{ secrets.VM_ADMIN_PASSWORD }}
@@ -57,7 +57,7 @@ jobs:
         VM_NAME="${{ steps.create-vm.outputs.vm_name }}"
         
         az vm extension set \
-          --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --resource-group "gh-runners-rg" \
           --vm-name $VM_NAME \
           --name CustomScriptExtension \
           --publisher Microsoft.Compute \
