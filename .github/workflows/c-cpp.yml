@@ -63,7 +63,7 @@ jobs:
           --scripts "
             \$env:GH_RUNNER_TOKEN='${{ steps.generate-token.outputs.runner_token }}'
             \$env:GH_REPO='${{ github.repository }}'
-            C:\actions-runner\startup.ps1
+            C:\startup.ps1
           "
     
     - name: Wait for runner
