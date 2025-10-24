@@ -28,23 +28,6 @@ log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
-get_image_id() {
-    log "Retrieving custom image ID..."
-    IMAGE_ID=$(az image show \
-        --resource-group "$RESOURCE_GROUP" \
-        --name "$IMAGE_NAME" \
-        --query id -o tsv 2>/dev/null)
-    
-    if [ -z "$IMAGE_ID" ]; then
-        log "ERROR: Custom image '$IMAGE_NAME' not found in resource group '$RESOURCE_GROUP'"
-        log "Please create the custom image first following Phase 1 of the guide"
-        exit 1
-    fi
-    
-    log "Found image: $IMAGE_ID"
-    echo "$IMAGE_ID"
-}
-
 create_vm() {
     local image_id=$1
     
@@ -55,7 +38,7 @@ create_vm() {
     az vm create \
         --resource-group "$RESOURCE_GROUP" \
         --name "$VM_NAME" \
-        --image "$image_id" \
+        --image "$IMAGE_NAME" \
         --size "$VM_SIZE" \
         --location "$LOCATION" \
         --admin-username "$ADMIN_USERNAME" \
@@ -130,10 +113,8 @@ main() {
     log "VM Name: $VM_NAME"
     log "Location: $LOCATION"
     log "=========================================="
-    
-    IMAGE_ID=$(get_image_id)
-    
-    create_vm "$IMAGE_ID"
+
+    create_vm
     
     configure_nsg
     
