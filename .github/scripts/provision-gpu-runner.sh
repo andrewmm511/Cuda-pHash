@@ -16,11 +16,6 @@ VM_SIZE="${VM_SIZE:-Standard_NV6ads_A10_v5}"
 ADMIN_USERNAME="${ADMIN_USERNAME:-azureuser}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD}"
 
-if [ -z "$ADMIN_PASSWORD" ]; then
-    echo "ERROR: ADMIN_PASSWORD environment variable must be set"
-    exit 1
-fi
-
 # ============================================================================
 # Functions
 # ============================================================================
