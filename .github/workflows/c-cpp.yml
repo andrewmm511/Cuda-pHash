@@ -68,7 +68,7 @@ jobs:
       shell: powershell
 
     - name: Build Installer
-      run: cd build/windows-release && cpack -C Release -G NSIS
+      run: cd build/windows-release; cpack -C Release -G NSIS
       shell: powershell
 
     - name: Upload build artifacts
