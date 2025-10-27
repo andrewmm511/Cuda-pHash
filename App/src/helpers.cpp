@@ -135,7 +135,19 @@ std::string formatFileSize(std::uintmax_t bytes)
     const char* units[] = { "B", "KB", "MB", "GB", "TB" };
     if (bytes == 0) return "0.00 B";
 
-    int unit = std::min(4, static_cast<int>(std::log(bytes) / std::log(1024)));
+    int unit;
+    if (bytes < 1024ULL) {
+        unit = 0;  // Bytes
+    } else if (bytes < 1024ULL * 1024) {
+        unit = 1;  // Kilobytes
+    } else if (bytes < 1024ULL * 1024 * 1024) {
+        unit = 2;  // Megabytes
+    } else if (bytes < 1024ULL * 1024 * 1024 * 1024) {
+        unit = 3;  // Gigabytes
+    } else {
+        unit = 4;  // Terabytes
+    }
+
     double size = bytes / std::pow(1024.0, unit);
 
     return std::format("{:.2f} {}", size, units[unit]);

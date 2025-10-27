@@ -48,6 +48,8 @@ create_vm() {
         --max-price "1" \
         --eviction-policy Delete \
         --accelerated-networking true \
+        --nic-delete-option delete \
+        --os-disk-delete-option delete \
         --tags github_run_id="${GITHUB_RUN_ID:-manual}" github_repository="${GITHUB_REPOSITORY:-manual}" auto_cleanup=true \
         --output none
     

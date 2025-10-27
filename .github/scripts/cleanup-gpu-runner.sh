@@ -31,19 +31,12 @@ main() {
         exit 0
     fi
     
-    log "Finding all resources with pattern: ${VM_NAME}*"
-    
-    RESOURCE_IDS=$(az resource list --resource-group "$RESOURCE_GROUP" --query "[?starts_with(name, '$VM_NAME')].id" -o tsv)
-    
-    if [ -n "$RESOURCE_IDS" ]; then
-        log "Found $(echo "$RESOURCE_IDS" | wc -l) resources to delete"
-        
-        echo "$RESOURCE_IDS" | xargs -P 10 -I {} az resource delete --ids {} --no-wait 2>/dev/null || true
-        
-        log "Deletion initiated for all resources"
-    else
-        log "No resources found matching pattern"
-    fi
+    log "Deleting ${VM_NAME}*"
+
+    az vm delete \
+        --resource-group "$RESOURCE_GROUP" \
+        --name "$VM_NAME" \
+        --force-deletion true
     
     log "Cleanup complete!"
 }
