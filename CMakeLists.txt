@@ -32,6 +32,7 @@ if(MSVC AND CUDAPHASH_STATIC_MSVC_RUNTIME)
 endif()
 
 option(CUDAPHASH_ENABLE_LTO "Enable Link Time Optimization" ON)
+option(CUDAPHASH_LTO_EXECUTABLE_ONLY "Apply LTO only to executables, not static libraries" ON)
 option(CUDAPHASH_ENABLE_NATIVE_ARCH "Build for native CPU architecture" OFF)
 option(CUDAPHASH_ENABLE_FAST_MATH "Enable fast math optimizations" ON)
 option(CUDAPHASH_ENABLE_PARALLEL_COMPILE "Enable parallel compilation" ON)
@@ -144,14 +145,6 @@ target_compile_definitions(cudaphash_common_options INTERFACE
     $<$<CONFIG:RelWithDebInfo>:NDEBUG>
     $<$<CONFIG:MinSizeRel>:NDEBUG>
 )
-
-if(CUDAPHASH_ENABLE_LTO AND CUDAPHASH_IPO_SUPPORTED)
-    set_target_properties(cudaphash_common_options PROPERTIES
-        INTERFACE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
-        INTERFACE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO TRUE
-        INTERFACE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL TRUE
-    )
-endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

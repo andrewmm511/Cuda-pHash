@@ -36,7 +36,7 @@ main() {
     az vm delete \
         --resource-group "$RESOURCE_GROUP" \
         --name "$VM_NAME" \
-        --force-deletion true
+        --force-deletion true \
         --yes
     
     log "Cleanup complete!"

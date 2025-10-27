@@ -60,7 +60,7 @@ jobs:
       shell: powershell
 
     - name: Build
-      run: cmake --build build/windows-release --config ${{ matrix.build_config }} -j 4
+      run: cmake --build build/windows-release --config ${{ matrix.build_config }} -j 6
       shell: powershell
 
     - name: Test

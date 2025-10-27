@@ -2,7 +2,7 @@
     "version": 6,
     "cmakeMinimumRequired": {
         "major": 3,
-        "minor": 24,
+        "minor": 31,
         "patch": 0
     },
     "configurePresets": [
@@ -46,20 +46,27 @@
                 "CUDA_VERBOSE_PTXAS": "OFF"
             }
         },
-        {
-            "name": "windows-release",
-            "displayName": "Windows Release",
-            "description": "Release build with Visual Studio (full optimizations)",
-            "inherits": "windows-base",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "BUILD_TESTS": "ON",
-                "CUDAPHASH_ENABLE_LTO": "ON",
-                "CUDAPHASH_ENABLE_FAST_MATH": "ON",
-                "CUDAPHASH_ENABLE_AVX2": "ON",
-                "CUDA_VERBOSE_PTXAS": "OFF"
-            }
-        },
+		{
+			"name": "windows-release",
+			"displayName": "Windows Release",
+			"description": "Release build with Ninja (All optimizations)",
+			"inherits": "base",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			},
+			"generator": "Ninja",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"BUILD_TESTS": "ON",
+				"CUDAPHASH_ENABLE_LTO": "ON",
+				"CUDAPHASH_LTO_EXECUTABLE_ONLY": "ON",
+				"CUDAPHASH_ENABLE_FAST_MATH": "ON",
+				"CUDAPHASH_ENABLE_AVX2": "ON",
+				"CUDA_VERBOSE_PTXAS": "OFF"
+			}
+		},
         {
             "name": "windows-release-native",
             "displayName": "Windows Release (Native)",
