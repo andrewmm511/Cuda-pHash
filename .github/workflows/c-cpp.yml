@@ -15,7 +15,7 @@ env:
 
 jobs:
   provision-vm:
-    name: Start VM
+    name: Start_VM
     runs-on: ubuntu-latest
     outputs:
       vm_name: ${{ steps.create-vm.outputs.vm_name }}
@@ -32,19 +32,15 @@ jobs:
     - name: Create VM
       id: create-vm
       env:
-        AZURE_RESOURCE_GROUP: "gh-runners-rg"
-        AZURE_LOCATION: "eastus"
-        GITHUB_RUN_ID: ${{ github.run_id }}
-        GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+        VM_NAME: "ghr-${{ github.run_id: -6 }}-${{ github.run_attempt }}"
         ADMIN_PASSWORD: ${{ secrets.VM_ADMIN_PASSWORD }}
-      run: |
-        chmod +x .github/scripts/provision-gpu-runner.sh
-        .github/scripts/provision-gpu-runner.sh
+      run: .github/scripts/provision-gpu-runner.sh
 
 
   build:
     name: Build
     runs-on: [self-hosted, gpu, cuda, windows]
+    needs: [ Start_VM ]
     
     strategy:
       matrix:
@@ -67,17 +63,15 @@ jobs:
       shell: powershell
 
     - name: Test
-      uses: threeal/ctest-action@v1.1.0
-      with:
-        test-dir: build/windows-release
-        build-config: ${{ matrix.build_config }}
+      run: ctest --test-dir build/windows-release -C Release --output-on-failure
+      shell: powershell
 
     - name: Build Installer
       run: cd build/windows-release && cpack -C Release -G NSIS
       shell: powershell
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4.6.2
       with:
         name: cuda-build-windows-x64
         path: |
@@ -88,7 +82,7 @@ jobs:
   shutdown-vm:
     name: Shutdown VM
     runs-on: ubuntu-latest
-    needs: [ Build ]
+    needs: [ Start_VM, Build ]
     if: always()
     
     steps:
@@ -101,6 +95,6 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
     - name: Delete VM
-      run: |
-        chmod +x .github/scripts/cleanup-gpu-runner.sh
-        .github/scripts/cleanup-gpu-runner.sh
+      env:
+        VM_NAME: "ghr-${{ github.run_id: -6 }}-${{ github.run_attempt }}"
+      run: .github/scripts/cleanup-gpu-runner.sh
