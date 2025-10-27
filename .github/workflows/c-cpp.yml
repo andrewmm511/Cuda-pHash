@@ -43,7 +43,7 @@ jobs:
 
 
   build:
-    name: Build and Test
+    name: Build
     runs-on: [self-hosted, gpu, cuda, windows]
     
     strategy:
@@ -73,8 +73,7 @@ jobs:
         build-config: ${{ matrix.build_config }}
 
     - name: Build Installer
-      run: |
-        cd build/windows-release && cpack -C Release -G NSIS
+      run: cd build/windows-release && cpack -C Release -G NSIS
       shell: powershell
 
     - name: Upload build artifacts
@@ -89,7 +88,7 @@ jobs:
   shutdown-vm:
     name: Shutdown VM
     runs-on: ubuntu-latest
-    needs: [build, test]
+    needs: [ Build ]
     if: always()
     
     steps:
