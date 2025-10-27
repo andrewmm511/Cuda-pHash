@@ -41,7 +41,7 @@ jobs:
   build:
     name: Build
     runs-on: [self-hosted, gpu, cuda, windows]
-    needs: [Startup]
+    needs: [provision-vm]
     
     strategy:
       matrix:
@@ -83,7 +83,7 @@ jobs:
   shutdown-vm:
     name: Shutdown
     runs-on: ubuntu-latest
-    needs: [Startup, Build]
+    needs: [provision-vm, build]
     if: always()
     
     steps:
