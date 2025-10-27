@@ -66,14 +66,6 @@ if(CUDAPHASH_ENABLE_LTO AND CUDAPHASH_IPO_SUPPORTED AND NOT CUDAPHASH_LTO_EXECUT
         INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO TRUE
         INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL TRUE
     )
-
-    if(MSVC)
-        target_link_options(CudaPhashLib PRIVATE
-            $<$<CONFIG:Release>:/LTCG:PARALLEL>
-            $<$<CONFIG:RelWithDebInfo>:/LTCG:PARALLEL>
-            $<$<CONFIG:MinSizeRel>:/LTCG:PARALLEL>
-        )
-    endif()
 endif()
 
 option(CUDAPHASH_STATIC_CUDART "Link CUDA runtime statically" ON)

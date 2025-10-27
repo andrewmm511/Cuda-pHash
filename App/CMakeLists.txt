@@ -42,14 +42,6 @@ if(CUDAPHASH_ENABLE_LTO AND CUDAPHASH_IPO_SUPPORTED)
         INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO TRUE
         INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL TRUE
     )
-
-    if(MSVC)
-        target_link_options(App PRIVATE
-            $<$<CONFIG:Release>:/LTCG:PARALLEL>
-            $<$<CONFIG:RelWithDebInfo>:/LTCG:PARALLEL>
-            $<$<CONFIG:MinSizeRel>:/LTCG:PARALLEL>
-        )
-    endif()
 endif()
 
 install(TARGETS App

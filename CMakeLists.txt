@@ -43,6 +43,12 @@ if(CUDAPHASH_ENABLE_LTO)
     check_ipo_supported(RESULT CUDAPHASH_IPO_SUPPORTED OUTPUT CUDAPHASH_IPO_ERROR)
     if(CUDAPHASH_IPO_SUPPORTED)
         message(STATUS "Link Time Optimization (IPO/LTO) enabled")
+
+        # Use parallel LTCG for faster linking on MSVC
+        if(MSVC)
+            set(CMAKE_CXX_LINK_OPTIONS_IPO "/LTCG:PARALLEL")
+            set(CMAKE_C_LINK_OPTIONS_IPO "/LTCG:PARALLEL")
+        endif()
     else()
         message(STATUS "Link Time Optimization not supported: ${CUDAPHASH_IPO_ERROR}")
         set(CUDAPHASH_ENABLE_LTO OFF)
