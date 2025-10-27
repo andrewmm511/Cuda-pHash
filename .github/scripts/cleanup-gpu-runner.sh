@@ -8,7 +8,8 @@ set -e
 # ============================================================================
 
 RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-gh-runners-rg}"
-VM_NAME="${VM_NAME}"
+SHORT_RUN_ID="${GITHUB_RUN_ID: -6}"
+VM_NAME="${VM_NAME:-ghr-${SHORT_RUN_ID}-${GITHUB_RUN_ATTEMPT}}"
 
 # ============================================================================
 # Functions

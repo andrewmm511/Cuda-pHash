@@ -32,7 +32,8 @@ jobs:
     - name: Create VM
       id: create-vm
       env:
-        VM_NAME: "ghr-${{ github.run_id: -6 }}-${{ github.run_attempt }}"
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
         ADMIN_PASSWORD: ${{ secrets.VM_ADMIN_PASSWORD }}
       run: .github/scripts/provision-gpu-runner.sh
 
@@ -96,5 +97,6 @@ jobs:
     
     - name: Delete VM
       env:
-        VM_NAME: "ghr-${{ github.run_id: -6 }}-${{ github.run_attempt }}"
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
       run: .github/scripts/cleanup-gpu-runner.sh
