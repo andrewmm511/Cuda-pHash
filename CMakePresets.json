@@ -60,16 +60,6 @@
                 "CUDA_VERBOSE_PTXAS": "OFF"
             }
         },
-		{
-            "name": "windows-installer",
-            "displayName": "Windows Installer",
-            "description": "Release build for installer with Visual Studio",
-            "inherits": "windows-release",
-            "cacheVariables": {
-                "BUILD_WINDOWS_INSTALLER": "ON",
-                "BUILD_TESTS": "OFF"
-            }
-        },
         {
             "name": "windows-release-native",
             "displayName": "Windows Release (Native)",
@@ -86,72 +76,6 @@
             "inherits": "windows-base",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-                "BUILD_TESTS": "ON",
-                "CUDAPHASH_ENABLE_LTO": "ON",
-                "CUDAPHASH_ENABLE_FAST_MATH": "ON",
-                "CUDAPHASH_ENABLE_AVX2": "ON"
-            }
-        },
-        {
-            "name": "windows-minsizerel",
-            "displayName": "Windows MinSizeRel",
-            "description": "Size-optimized release build",
-            "inherits": "windows-base",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "MinSizeRel",
-                "BUILD_TESTS": "OFF",
-                "CUDAPHASH_ENABLE_LTO": "ON",
-                "CUDAPHASH_ENABLE_FAST_MATH": "ON",
-                "CUDAPHASH_ENABLE_AVX2": "OFF"
-            }
-        },
-        {
-            "name": "ci-windows",
-            "displayName": "CI Windows",
-            "description": "Configuration for continuous integration",
-            "inherits": "windows-release",
-            "cacheVariables": {
-                "BUILD_TESTS": "ON",
-                "ENABLE_CCACHE": "ON",
-                "CUDA_VERBOSE_PTXAS": "ON",
-                "CUDAPHASH_ENABLE_NATIVE_ARCH": "OFF"
-            }
-        },
-        {
-            "name": "linux-base",
-            "hidden": true,
-            "inherits": "base",
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Linux"
-            },
-            "generator": "Ninja",
-            "cacheVariables": {
-                "CMAKE_CXX_COMPILER": "g++",
-                "CMAKE_C_COMPILER": "gcc",
-                "CMAKE_CUDA_COMPILER": "nvcc"
-            }
-        },
-        {
-            "name": "linux-debug",
-            "displayName": "Linux Debug",
-            "description": "Debug build with GCC/Ninja",
-            "inherits": "linux-base",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "BUILD_TESTS": "ON",
-                "CUDAPHASH_ENABLE_LTO": "OFF",
-                "ENABLE_COVERAGE": "OFF"
-            }
-        },
-        {
-            "name": "linux-release",
-            "displayName": "Linux Release",
-            "description": "Release build with GCC/Ninja",
-            "inherits": "linux-base",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
                 "BUILD_TESTS": "ON",
                 "CUDAPHASH_ENABLE_LTO": "ON",
                 "CUDAPHASH_ENABLE_FAST_MATH": "ON",
@@ -174,35 +98,6 @@
             "description": "Build Windows Release configuration",
             "configuration": "Release",
             "jobs": 0
-        },
-		{ 
-			"name": "windows-installer-build",
-            "configurePreset": "windows-installer",
-			"displayName": "Build Windows Installer",
-            "description": "Build Windows Installer configuration",
-            "configuration": "Release",
-            "jobs": 0
-		},
-        {
-            "name": "windows-release-native-build",
-            "configurePreset": "windows-release-native",
-            "displayName": "Build Windows Release Native",
-            "description": "Build Windows Release with native CPU optimizations",
-            "configuration": "Release",
-            "jobs": 0
-        },
-        {
-            "name": "linux-debug-build",
-            "configurePreset": "linux-debug",
-            "displayName": "Build Linux Debug",
-            "description": "Build Linux Debug configuration"
-        },
-        {
-            "name": "linux-release-build",
-            "configurePreset": "linux-release",
-            "displayName": "Build Linux Release",
-            "description": "Build Linux Release configuration",
-            "jobs": 0
         }
     ],
     "testPresets": [
@@ -216,26 +111,17 @@
                 "outputOnFailure": true,
                 "verbosity": "default"
             }
-        },
-        {
-            "name": "linux-test",
-            "configurePreset": "linux-release",
-            "displayName": "Test Linux",
-            "description": "Run tests on Linux",
-            "output": {
-                "outputOnFailure": true,
-                "verbosity": "default"
-            }
         }
     ],
     "packagePresets": [
         {
             "name": "windows-package",
             "configurePreset": "windows-release",
-            "displayName": "Package Windows",
-            "description": "Create Windows package",
+            "displayName": "Package Windows Release",
+            "description": "Create Windows installer (NSIS) and ZIP package from Release build",
             "configurations": ["Release"],
-            "generators": ["ZIP", "NSIS"]
+            "generators": ["NSIS", "ZIP"],
+            "vendorName": "Andrew Martin"
         }
     ]
 }

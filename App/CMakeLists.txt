@@ -47,6 +47,7 @@ endif()
 install(TARGETS App
     EXPORT CudaPHashTargets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    COMPONENT Runtime
 )
 
 install(TARGETS App
@@ -54,4 +55,5 @@ install(TARGETS App
 	DIRECTORIES "${CUDAToolkit_BIN_DIR}"
     PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-"
     POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
+    COMPONENT Runtime
 )

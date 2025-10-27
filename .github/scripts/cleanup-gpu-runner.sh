@@ -153,8 +153,6 @@ main() {
     
     log "=========================================="
     log "Cleanup Initiated!"
-    log "Note: Deletions are asynchronous and may"
-    log "take a few minutes to complete fully."
     log "=========================================="
 }
 

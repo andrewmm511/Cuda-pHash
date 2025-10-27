@@ -43,7 +43,7 @@ jobs:
 
 
   build:
-    name: Build
+    name: Build and Test
     runs-on: [self-hosted, gpu, cuda, windows]
     
     strategy:
@@ -66,35 +66,25 @@ jobs:
       run: cmake --build build/windows-release --config ${{ matrix.build_config }} -j 4
       shell: powershell
 
+    - name: Test
+      uses: threeal/ctest-action@v1.1.0
+      with:
+        test-dir: build/windows-release
+        build-config: ${{ matrix.build_config }}
+
+    - name: Build Installer
+      run: |
+        cd build/windows-release && cpack -C Release -G NSIS
+      shell: powershell
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: cuda-build-windows-x64
         path: |
-          build/windows-release/**/*.exe
-          build/windows-release/**/*.dll
-          build/windows-release/**/*.lib
-          build/windows-release/Testing/
+          build/windows-release/lib/cudaphash.lib
+          build/windows-release/_CPack_Packages/win64/NSIS/*.exe
         retention-days: 1
-
-  test:
-    name: Test
-    runs-on: [self-hosted, gpu, cuda, windows]
-    needs: build
-    
-    strategy:
-      matrix:
-        include:
-          - name: "Windows-x64-Release"
-            architecture: x64
-            build_config: Release
-
-    steps:
-    - name: Test Project
-      uses: threeal/ctest-action@v1.1.0
-      with:
-        test-dir: build/windows-release
-        build-config: ${{ matrix.build_config }}
 
   shutdown-vm:
     name: Shutdown VM
@@ -103,6 +93,9 @@ jobs:
     if: always()
     
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
     - name: Azure Login
       uses: azure/login@v2.3.0
       with:

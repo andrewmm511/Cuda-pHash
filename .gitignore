@@ -8,6 +8,7 @@ CppProperties.json
 
 # Build results
 build/
+out/
 
 # Visual C++ cache files
 ipch/
@@ -73,7 +74,7 @@ ipch/
 *.cache
 
 # AI Junk
-/.claude
+.claude/
 CLAUDE.md
 AGENTS.md
 /AGENTS.md
