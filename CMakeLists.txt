@@ -45,11 +45,7 @@ if(CUDAPHASH_ENABLE_LTO)
     if(CUDAPHASH_IPO_SUPPORTED)
         message(STATUS "Link Time Optimization (IPO/LTO) enabled")
         if(MSVC)
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} 
-                /CGTHREADS:6
-                /LTCG:INCREMENTAL
-                /CGTHREADS:8
-                /HEAP:0x40000000")
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /CGTHREADS:8 /LTCG:INCREMENTAL /HEAP:0x40000000")
         endif()
     else()
         message(STATUS "Link Time Optimization not supported: ${CUDAPHASH_IPO_ERROR}")

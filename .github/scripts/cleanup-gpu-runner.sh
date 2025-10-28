@@ -38,7 +38,15 @@ main() {
         --name "$VM_NAME" \
         --force-deletion true \
         --yes
-    
+
+    log "Deleteing ${VM_NAME}-ip"
+
+    az network public-ip delete --resource-group "$RESOURCE_GROUP" --name "${VM_NAME}-ip" --yes
+
+    log "Deleting ${VM_NAME}-nsg"
+
+    az network nsg delete --resource-group "$RESOURCE_GROUP" --name "${VM_NAME}-nsg" --yes
+
     log "Cleanup complete!"
 }
 
