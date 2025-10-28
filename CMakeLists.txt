@@ -38,16 +38,18 @@ option(CUDAPHASH_ENABLE_FAST_MATH "Enable fast math optimizations" ON)
 option(CUDAPHASH_ENABLE_PARALLEL_COMPILE "Enable parallel compilation" ON)
 option(CUDA_VERBOSE_PTXAS "Show CUDA PTX assembly statistics for optimization" OFF)
 
+
 if(CUDAPHASH_ENABLE_LTO)
     include(CheckIPOSupported)
     check_ipo_supported(RESULT CUDAPHASH_IPO_SUPPORTED OUTPUT CUDAPHASH_IPO_ERROR)
     if(CUDAPHASH_IPO_SUPPORTED)
         message(STATUS "Link Time Optimization (IPO/LTO) enabled")
-
-        # Use parallel LTCG for faster linking on MSVC
         if(MSVC)
-            set(CMAKE_CXX_LINK_OPTIONS_IPO "/LTCG:PARALLEL")
-            set(CMAKE_C_LINK_OPTIONS_IPO "/LTCG:PARALLEL")
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} 
+                /CGTHREADS:6
+                /LTCG:INCREMENTAL
+                /CGTHREADS:8
+                /HEAP:0x40000000")
         endif()
     else()
         message(STATUS "Link Time Optimization not supported: ${CUDAPHASH_IPO_ERROR}")
