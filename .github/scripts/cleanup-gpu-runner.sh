@@ -41,11 +41,15 @@ main() {
 
     log "Deleteing ${VM_NAME}-ip"
 
-    az network public-ip delete --resource-group "$RESOURCE_GROUP" --name "${VM_NAME}-ip" --yes
+    az network public-ip delete --resource-group "$RESOURCE_GROUP" --name "${VM_NAME}-ip"
 
     log "Deleting ${VM_NAME}-nsg"
 
-    az network nsg delete --resource-group "$RESOURCE_GROUP" --name "${VM_NAME}-nsg" --yes
+    az network nsg delete --resource-group "$RESOURCE_GROUP" --name "${VM_NAME}-nsg"
+
+    log "Deleting ${VM_NAME}VNET"
+    
+    az network vnet delete --resource-group "$RESOURCE_GROUP" --name "${VM_NAME}VNET"
 
     log "Cleanup complete!"
 }

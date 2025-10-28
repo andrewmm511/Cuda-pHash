@@ -45,7 +45,12 @@ if(CUDAPHASH_ENABLE_LTO)
     if(CUDAPHASH_IPO_SUPPORTED)
         message(STATUS "Link Time Optimization (IPO/LTO) enabled")
         if(MSVC)
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /CGTHREADS:8 /LTCG:INCREMENTAL /HEAP:0x40000000")
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /CGTHREADS:8 /LTCG:INCREMENTAL")
+            if(CMAKE_BUILD_TYPE STREQUAL "Release")
+                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /HEAP:0x80000000 /OPT:REF /OPT:ICF=3")
+            else()
+                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /HEAP:0x40000000")
+            endif()
         endif()
     else()
         message(STATUS "Link Time Optimization not supported: ${CUDAPHASH_IPO_ERROR}")
@@ -101,7 +106,7 @@ add_library(CudaPHash::CommonOptions ALIAS cudaphash_common_options)
 
 target_compile_options(cudaphash_common_options INTERFACE
     $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:
-        $<$<CONFIG:Release>:/O2 /Ob3 /Oi /Ot /Oy /GL /Gy /GF /Gw /fp:fast /Qpar /favor:blend
+        $<$<CONFIG:Release>:/O2 /Ob3 /Oi /Ot /Oy /GL /Gy /GF /Gw /fp:fast /Qpar /favor:blend /Qfast_transcendentals /Zc:inline
             $<$<BOOL:${CUDAPHASH_AVX2_AVAILABLE}>:${AVX2_FLAG}>>
         $<$<CONFIG:RelWithDebInfo>:/O2 /Ob2 /Oi /Ot /fp:fast
             $<$<BOOL:${CUDAPHASH_AVX2_AVAILABLE}>:${AVX2_FLAG}>>
@@ -134,6 +139,9 @@ target_compile_options(cudaphash_common_options INTERFACE
             --prec-sqrt=false
             --fmad=true
             -O3
+            $<$<CONFIG:Release>:--extra-device-vectorization>
+            $<$<CONFIG:Release>:--optimize-float-atomics>
+            $<$<CONFIG:Release>:--split-compile 8>
         >
         $<$<CONFIG:RelWithDebInfo>:-lineinfo>
         $<$<CONFIG:Debug>:-G --debug -O0>
