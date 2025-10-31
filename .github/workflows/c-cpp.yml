@@ -86,6 +86,7 @@ jobs:
       with:
         fail_on_unmatched_files: true
         make_latest: true
+        token: ${{ secrets.GH_PAT }}
         files: |
            build/windows-release/lib/cudaphash.lib
            build/windows-release/_CPack_Packages/win64/NSIS/CudaPHash-0.1.0-win64.exe
