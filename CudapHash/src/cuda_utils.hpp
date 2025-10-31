@@ -10,10 +10,8 @@
 #include <string>
 #include <stdexcept>
 
-// CUDA headers required by CUDA_CHECK
 #include <cuda_runtime.h>
 
-// Unified CUDA error checking macro
 #define CUDA_CHECK(call) do { \
     cudaError_t error = (call); \
     if (error != cudaSuccess) { \
@@ -21,6 +19,15 @@
                                  " - " + cudaGetErrorString(error)); \
     } \
 } while (0)
+
+#define CUDA_CHECK_NOTHROW(call) do {                              \
+    cudaError_t err = call;                                        \
+    if (err != cudaSuccess) {                                      \
+        std::cerr << "CUDA error in " << __FILE__ << " at line "  \
+                  << __LINE__ << ": " << cudaGetErrorString(err)   \
+                  << std::endl;                                    \
+    }                                                              \
+} while(0)
 
 // Constants
 constexpr int DEFAULT_RNG_SEED = 12345;

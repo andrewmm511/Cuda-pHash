@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <random>
 #include <numeric>
+#include <numbers>
+#include <bit>
 
 #ifdef _MSC_VER
 #  include <intrin.h>
@@ -58,7 +60,7 @@ TEST_F(DctKernelTest, BasicDCTMatrix) {
     std::vector<float> T(N * N, 0.0f);
 
     float invSqrtN = 1.0f / std::sqrt(static_cast<float>(N));
-    float sqrtTwoDivN = std::sqrt(2.0f / N);
+    float sqrtTwoDivN = std::sqrtf(2.0f / N);
 
     ASSERT_NO_THROW(testDctMatrixKernel(T.data(), N, invSqrtN, sqrtTwoDivN));
 
@@ -69,7 +71,7 @@ TEST_F(DctKernelTest, BasicDCTMatrix) {
 
     // Verify second row alternates signs with proper cosine values
     for (int j = 0; j < N; j++) {
-        float expected = sqrtTwoDivN * std::cos((2.0f * j + 1.0f) * M_PI / (2.0f * N));
+        float expected = sqrtTwoDivN * std::cosf((2.0f * j + 1.0f) * std::numbers::pi_v<float> / (2.0f * N));
         EXPECT_NEAR(T[N + j], expected, 1e-5);
     }
 }
@@ -79,7 +81,7 @@ TEST_F(DctKernelTest, OrthogonalityProperty) {
     std::vector<float> T(N * N, 0.0f);
 
     float invSqrtN = 1.0f / std::sqrt(static_cast<float>(N));
-    float sqrtTwoDivN = std::sqrt(2.0f / N);
+    float sqrtTwoDivN = std::sqrtf(2.0f / N);
 
     ASSERT_NO_THROW(testDctMatrixKernel(T.data(), N, invSqrtN, sqrtTwoDivN));
 
@@ -91,8 +93,8 @@ TEST_F(DctKernelTest, LargerMatrix32x32) {
     const int N = 32;
     std::vector<float> T(N * N, 0.0f);
 
-    float invSqrtN = 1.0f / std::sqrt(static_cast<float>(N));
-    float sqrtTwoDivN = std::sqrt(2.0f / N);
+    float invSqrtN = 1.0f / std::sqrtf(static_cast<float>(N));
+    float sqrtTwoDivN = std::sqrtf(2.0f / N);
 
     ASSERT_NO_THROW(testDctMatrixKernel(T.data(), N, invSqrtN, sqrtTwoDivN));
 
@@ -109,13 +111,12 @@ TEST_F(DctKernelTest, SmallMatrix4x4) {
     const int N = 4;
     std::vector<float> T(N * N, 0.0f);
 
-    float invSqrtN = 1.0f / std::sqrt(static_cast<float>(N));
-    float sqrtTwoDivN = std::sqrt(2.0f / N);
+    float invSqrtN = 1.0f / std::sqrtf(static_cast<float>(N));
+    float sqrtTwoDivN = std::sqrtf(2.0f / N);
 
     ASSERT_NO_THROW(testDctMatrixKernel(T.data(), N, invSqrtN, sqrtTwoDivN));
 
-    // For a 4x4 matrix, we can verify exact values
-    EXPECT_NEAR(T[0], 0.5f, 1e-5);  // 1/sqrt(4) = 0.5
+    EXPECT_NEAR(T[0], 0.5f, 1e-5);
     EXPECT_NEAR(T[1], 0.5f, 1e-5);
     EXPECT_NEAR(T[2], 0.5f, 1e-5);
     EXPECT_NEAR(T[3], 0.5f, 1e-5);
@@ -295,8 +296,8 @@ TEST_F(BicubicResizeTest, CheckerboardPattern) {
     float minVal = *std::min_element(outputImage.begin(), outputImage.end());
     float maxVal = *std::max_element(outputImage.begin(), outputImage.end());
 
-    EXPECT_LT(minVal, 128.0f);  // Should have dark pixels
-    EXPECT_GT(maxVal, 128.0f);  // Should have light pixels
+    EXPECT_LT(minVal, 128.0f);  // dark pixels
+    EXPECT_GT(maxVal, 128.0f);  // light pixels
 }
 
 // ============================================================================
@@ -315,8 +316,8 @@ protected:
 
     // Count the number of set bits in a hash
     int countBits(const TestpHash& hash) {
-        return __builtin_popcountll(hash.words[0]) +
-               __builtin_popcountll(hash.words[1]);
+        return std::popcount(hash.words[0]) +
+               std::popcount(hash.words[1]);
     }
 };
 
@@ -613,7 +614,7 @@ protected:
     int hammingDistance(const TestpHash& a, const TestpHash& b) {
         uint64_t xor0 = a.words[0] ^ b.words[0];
         uint64_t xor1 = a.words[1] ^ b.words[1];
-        return __builtin_popcountll(xor0) + __builtin_popcountll(xor1);
+        return std::popcount(xor0) + std::popcount(xor1);
     }
 };
 

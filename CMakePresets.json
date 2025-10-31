@@ -12,7 +12,8 @@
             "binaryDir": "${sourceDir}/build/${presetName}",
             "installDir": "${sourceDir}/install/${presetName}",
             "cacheVariables": {
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+				"BUILD_TESTS": "ON"
             }
         },
         {
@@ -24,11 +25,7 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
             },
-            "generator": "Visual Studio 17 2022",
-            "architecture": {
-                "value": "x64",
-                "strategy": "set"
-            },
+            "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_SYSTEM_VERSION": "10.0"
             }
@@ -36,35 +33,21 @@
         {
             "name": "windows-debug",
             "displayName": "Windows Debug",
-            "description": "Debug build with Visual Studio (no optimizations)",
+            "description": "Debug build with Ninja (no optimizations)",
             "inherits": "windows-base",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "BUILD_TESTS": "ON",
                 "CUDAPHASH_ENABLE_LTO": "OFF",
-                "CUDAPHASH_ENABLE_FAST_MATH": "OFF",
-                "CUDA_VERBOSE_PTXAS": "OFF"
+                "CUDAPHASH_ENABLE_FAST_MATH": "OFF"
             }
         },
 		{
 			"name": "windows-release",
 			"displayName": "Windows Release",
 			"description": "Release build with Ninja (All optimizations)",
-			"inherits": "base",
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Windows"
-			},
-			"generator": "Ninja",
+			"inherits": "windows-base",
 			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release",
-				"BUILD_TESTS": "ON",
-				"CUDAPHASH_ENABLE_LTO": "ON",
-				"CUDAPHASH_LTO_EXECUTABLE_ONLY": "ON",
-				"CUDAPHASH_ENABLE_FAST_MATH": "ON",
-				"CUDAPHASH_ENABLE_AVX2": "ON",
-				"CUDA_VERBOSE_PTXAS": "OFF"
+				"CMAKE_BUILD_TYPE": "Release"
 			}
 		},
         {
@@ -73,20 +56,8 @@
             "description": "Release build optimized for current CPU",
             "inherits": "windows-release",
             "cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
                 "CUDAPHASH_ENABLE_NATIVE_ARCH": "ON"
-            }
-        },
-        {
-            "name": "windows-relwithdebinfo",
-            "displayName": "Windows RelWithDebInfo",
-            "description": "Optimized build with debug information",
-            "inherits": "windows-base",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-                "BUILD_TESTS": "ON",
-                "CUDAPHASH_ENABLE_LTO": "ON",
-                "CUDAPHASH_ENABLE_FAST_MATH": "ON",
-                "CUDAPHASH_ENABLE_AVX2": "ON"
             }
         }
     ],

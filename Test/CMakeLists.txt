@@ -1,5 +1,16 @@
 # Test
 
+include(FetchContent)
+FetchContent_Declare(
+	googletest
+	GIT_REPOSITORY https://github.com/google/googletest.git
+	GIT_TAG        v1.17.0
+)
+
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(googletest)
+
 set(APP_UNIT_TEST_SOURCES
     unit/App/arguments_test.cpp
     unit/App/helpers_test.cpp

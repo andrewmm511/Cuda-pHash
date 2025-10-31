@@ -148,8 +148,8 @@ MemoryManager::MemoryManager() {
 }
 
 MemoryManager::~MemoryManager() {
-    if (m_devPtr)    CUDA_CHECK(cudaFree(m_devPtr));
-    if (m_pinnedPtr) CUDA_CHECK(cudaFreeHost(m_pinnedPtr));
+    if (m_devPtr)    CUDA_CHECK_NOTHROW(cudaFree(m_devPtr));
+    if (m_pinnedPtr) CUDA_CHECK_NOTHROW(cudaFreeHost(m_pinnedPtr));
 }
 
 // ----------------------------------------------------------------------------------

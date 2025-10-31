@@ -80,6 +80,16 @@ jobs:
           build/windows-release/_CPack_Packages/win64/NSIS/*.exe
         retention-days: 1
 
+    - name: Release
+      uses: softprops/action-gh-release@v2.4.1
+      if: github.ref_type == 'tag'
+      with:
+        fail_on_unmatched_files: true
+        make_latest: true
+        files: |
+           build/windows-release/lib/cudaphash.lib
+           build/windows-release/_CPack_Packages/win64/NSIS/CudaPHash-0.1.0-win64.exe
+
   shutdown-vm:
     name: Shutdown
     runs-on: ubuntu-latest
