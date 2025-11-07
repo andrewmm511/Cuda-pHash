@@ -87,6 +87,11 @@ CudaPhash::CudaPhash(int hashSize, int highFreqFactor, int batchSize, int thread
     CUDA_CHECK(cudaStreamCreate(&m_resizeStream));
     CUDA_CHECK(cudaStreamCreate(&m_hashStream));
 
+    // Create events for non-blocking synchronization
+    CUDA_CHECK(cudaEventCreate(&m_decodeEvent));
+    CUDA_CHECK(cudaEventCreate(&m_resizeEvent));
+    CUDA_CHECK(cudaEventCreate(&m_hashEvent));
+
     CUDA_CHECK(cudaMalloc(&d_T, m_imgSize * m_imgSize * sizeof(float)));
     CUDA_CHECK(cudaMalloc(&d_TT, m_imgSize * m_imgSize * sizeof(float)));
     CUDA_CHECK(cudaMalloc(&d_AArray, m_batchSize * sizeof(float*)));
@@ -126,6 +131,10 @@ CudaPhash::~CudaPhash() {
     if (d_AoutArray) { cudaFree(d_AoutArray); }
     if (d_hashImgPtrs) { cudaFree(d_hashImgPtrs); }
     if (d_hashes) { cudaFree(d_hashes); }
+
+    cudaEventDestroy(m_decodeEvent);
+    cudaEventDestroy(m_resizeEvent);
+    cudaEventDestroy(m_hashEvent);
 
     cudaStreamDestroy(m_decodeStream);
     cudaStreamDestroy(m_resizeStream);
@@ -246,7 +255,17 @@ void CudaPhash::decoder(WorkQueue& inQueue, WorkQueue& outQueue) {
         DEBUG(__func__, "Allocated ", totalSize / (1024 * 1024), " MB for decoded images.");
 
         batchStatus = nvjpegDecodeBatched(m_nvjHandle, m_nvjDecoderState, rawPointers.data(), rawLengths.data(), outImages.data(), m_decodeStream);
-        cudaStreamSynchronize(m_decodeStream);
+
+        // Record event instead of blocking synchronization
+        CUDA_CHECK(cudaEventRecord(m_decodeEvent, m_decodeStream));
+
+        // Only wait if GPU hasn't finished yet (non-blocking check first)
+        cudaError_t status = cudaEventQuery(m_decodeEvent);
+        if (status == cudaErrorNotReady) {
+            CUDA_CHECK(cudaEventSynchronize(m_decodeEvent));
+        } else {
+            CUDA_CHECK(status);
+        }
 
         if (batchStatus != NVJPEG_STATUS_SUCCESS) {
             WARN(__func__, "nvjpegDecodeBatched failed with code: ", batchStatus, ". Attempting to decode batch individually.");
@@ -276,7 +295,15 @@ void CudaPhash::decoder(WorkQueue& inQueue, WorkQueue& outQueue) {
                 }
             }
 
-            cudaStreamSynchronize(m_decodeStream);
+            // Record event and wait for individual decodes to complete
+            CUDA_CHECK(cudaEventRecord(m_decodeEvent, m_decodeStream));
+
+            cudaError_t status = cudaEventQuery(m_decodeEvent);
+            if (status == cudaErrorNotReady) {
+                CUDA_CHECK(cudaEventSynchronize(m_decodeEvent));
+            } else {
+                CUDA_CHECK(status);
+            }
 
             INFO(__func__, "Individual decode succeeded for ", successfulImages.size(), " of ", imgs.size(), " images.");
 
@@ -328,7 +355,16 @@ void CudaPhash::resizer(WorkQueue& inQueue, WorkQueue& outQueue) {
         dim3 grid((static_cast<int>(m_imgSize) + block.x - 1) / block.x, (static_cast<int>(m_imgSize) + block.y - 1) / block.y, static_cast<int>(batchSize));
         batchBicubicResizeKernel <<<grid, block, 1, m_resizeStream >>> (d_gpuDataVec, m_imgSize);
 
-        cudaStreamSynchronize(m_resizeStream);
+        // Record event instead of blocking synchronization
+        CUDA_CHECK(cudaEventRecord(m_resizeEvent, m_resizeStream));
+
+        // Only wait if GPU hasn't finished yet (non-blocking check first)
+        cudaError_t status = cudaEventQuery(m_resizeEvent);
+        if (status == cudaErrorNotReady) {
+            CUDA_CHECK(cudaEventSynchronize(m_resizeEvent));
+        } else {
+            CUDA_CHECK(status);
+        }
 
         for (auto& img : imgs) {
             m_memMgr->Free(MemoryManager::DEVICE_POOL, img->gpuData.decodedPtr);
@@ -400,7 +436,16 @@ void CudaPhash::hasher(WorkQueue& inQueue) {
 
         for (size_t i = 0; i < batchSize; ++i) { imgs[i]->hashOffset = idx + i; }
 
-        cudaStreamSynchronize(m_hashStream);
+        // Record event instead of blocking synchronization
+        CUDA_CHECK(cudaEventRecord(m_hashEvent, m_hashStream));
+
+        // Only wait if GPU hasn't finished yet (non-blocking check first)
+        cudaError_t status = cudaEventQuery(m_hashEvent);
+        if (status == cudaErrorNotReady) {
+            CUDA_CHECK(cudaEventSynchronize(m_hashEvent));
+        } else {
+            CUDA_CHECK(status);
+        }
 
         for (auto& img : imgs) {
             m_memMgr->Free(MemoryManager::DEVICE_POOL, img->gpuData.resizedPtr);
@@ -458,9 +503,29 @@ std::vector<Image> CudaPhash::runPipeline(const std::vector<std::string>& imageP
     resizer.join();
     hasher.join();
 
-    cudaStreamSynchronize(m_decodeStream);
-    cudaStreamSynchronize(m_resizeStream);
-    cudaStreamSynchronize(m_hashStream);
+    // Ensure all GPU work is complete using events (non-blocking check first)
+    cudaError_t status;
+
+    status = cudaEventQuery(m_decodeEvent);
+    if (status == cudaErrorNotReady) {
+        CUDA_CHECK(cudaEventSynchronize(m_decodeEvent));
+    } else {
+        CUDA_CHECK(status);
+    }
+
+    status = cudaEventQuery(m_resizeEvent);
+    if (status == cudaErrorNotReady) {
+        CUDA_CHECK(cudaEventSynchronize(m_resizeEvent));
+    } else {
+        CUDA_CHECK(status);
+    }
+
+    status = cudaEventQuery(m_hashEvent);
+    if (status == cudaErrorNotReady) {
+        CUDA_CHECK(cudaEventSynchronize(m_hashEvent));
+    } else {
+        CUDA_CHECK(status);
+    }
 
     auto end = std::ranges::remove_if(imgs, [](const Image& img) { return img.hashOffset == static_cast<size_t>(-1); }).begin();
     imgs.erase(end, imgs.end());

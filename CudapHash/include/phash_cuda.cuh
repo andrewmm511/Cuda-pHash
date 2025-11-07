@@ -138,6 +138,11 @@ private:
     cudaStream_t m_resizeStream;
     cudaStream_t m_hashStream;
 
+    // Events for pipeline synchronization
+    cudaEvent_t m_decodeEvent;
+    cudaEvent_t m_resizeEvent;
+    cudaEvent_t m_hashEvent;
+
     // Hash stage memory
     const float** d_hashImgPtrs = nullptr;
     pHash* d_hashes = nullptr;
